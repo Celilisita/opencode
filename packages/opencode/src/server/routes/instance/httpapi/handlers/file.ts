@@ -104,6 +104,13 @@ export const fileHandlers = HttpApiBuilder.group(InstanceHttpApi, "file", (handl
         const detail = absolute ? ctx.query.path : `${ctx.query.path} (resolved: ${file})`
         return yield* Effect.fail(notFound(`File not found: ${detail}`))
       }
+      // Directories (and other non-regular paths) have no file content; answer
+      // through the normal error channel instead of dying inside FileSystem.read.
+      const detail = absolute ? ctx.query.path : `${ctx.query.path} (resolved: ${file})`
+      const info = yield* FSUtil.Service.use((fs) => fs.stat(file)).pipe(
+        Effect.catch(() => Effect.fail(notFound(`File not found: ${detail}`))),
+      )
+      if (info.type !== "File") return yield* Effect.fail(notFound(`Path is not a file: ${detail}`))
       return yield* filesystem(
         FileSystem.Service.use((fs) => fs.read({ path: RelativePath.make(ctx.query.path) })),
       ).pipe(
