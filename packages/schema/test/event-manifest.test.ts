@@ -43,23 +43,12 @@ describe("public event manifest", () => {
     expect(Reference.Event.Definitions).toEqual([Reference.Event.Updated])
     expect(EventManifest.Latest.has("ide.installed")).toBe(false)
     expect(IdeEvent.Definitions).toEqual([IdeEvent.Installed])
-    expect(
-      EventManifest.Definitions
-        .filter((definition) =>
-          ["message.part.delta", "message.part.progress", "session.diff", "session.error"].includes(definition.type),
-        )
-        .map((definition) => {
-          const { statics, ...rest } = definition
-          return rest
-        }),
-    ).toEqual(
-      [SessionV1.Event.PartDelta, SessionV1.Event.PartProgress, SessionV1.Event.Diff, SessionV1.Event.Error].map(
-        (definition) => {
-          const { statics, ...rest } = definition
-          return rest
-        },
-      ),
-    )
+    expect(EventManifest.Definitions.slice(43, 47)).toEqual([
+      SessionV1.Event.PartDelta,
+      SessionV1.Event.PartProgress,
+      SessionV1.Event.Diff,
+      SessionV1.Event.Error,
+    ])
     expect(EventManifest.Durable.has("session.next.step.ended.1")).toBe(false)
     expect(EventManifest.Durable.get("session.next.step.ended.2")).toBe(SessionEvent.Step.Ended)
   })
