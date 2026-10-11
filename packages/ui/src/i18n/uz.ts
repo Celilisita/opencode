@@ -36,6 +36,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "Faylni ochish",
   "ui.sessionReview.selection.line": "{{line}} liniyasi",
   "ui.sessionReview.selection.lines": "{{start}}-{{end}} chiziqlari",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "tasvir",
   "ui.fileMedia.kind.audio": "audio",
   "ui.fileMedia.state.removed": "{{kind}} fayli olib tashlandi.",

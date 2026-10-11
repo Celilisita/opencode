@@ -1893,7 +1893,11 @@ export function inlineCodeKind(text: string): "path" | "url" | undefined {
   if (/^[a-z][a-z0-9+.-]*:\/\//i.test(text)) return
   if (text === "/") return
   if (/^\/[a-z][a-z0-9-]*$/i.test(text)) return
-  if (/\s/.test(text)) return
+  const absolutePathWithSpaces =
+    text.startsWith("\\\\") ||
+    /^[A-Za-z]:[\\/]/.test(text) ||
+    (text.startsWith("/") && (text.slice(1).includes("/") || hasPathExtension(text)))
+  if (/\s/.test(text) && !absolutePathWithSpaces) return
   if (/[()\[\]{}*+=<>|&^"';]/.test(text)) return
   if (/[/\\]/.test(text) || /^\.\.?[/\\]/.test(text) || hasPathExtension(text) || hasPathFileName(text)) return "path"
 }

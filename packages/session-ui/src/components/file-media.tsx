@@ -1,15 +1,18 @@
 import type { FileContent } from "@opencode-ai/sdk/v2"
 import { createEffect, createMemo, Match, on, onCleanup, Show, Switch, untrack, type JSX } from "solid-js"
-import { createStore } from "solid-js/store"
+import { createStore, produce } from "solid-js/store"
 import { useI18n } from "@opencode-ai/ui/context/i18n"
+import { Icon } from "@opencode-ai/ui/icon"
 import {
   dataUrlFromMediaValue,
   hasMediaValue,
   isBinaryContent,
   mediaKindFromPath,
   normalizeMimeType,
+  previewKindFromPath,
   svgTextFromValue,
 } from "../pierre/media"
+import { DocxPreview } from "./docx-preview"
 
 export type FileMediaOptions = {
   mode?: "auto" | "off"
@@ -19,8 +22,9 @@ export type FileMediaOptions = {
   after?: unknown
   deleted?: boolean
   readFile?: (path: string) => Promise<FileContent | undefined>
+  openWithSystem?: (path: string) => void | Promise<void>
   onLoad?: () => void
-  onError?: (ctx: { kind: "image" | "audio" | "svg" }) => void
+  onError?: (ctx: { kind: "image" | "audio" | "svg" | "pdf" | "docx" }) => void
 }
 
 function mediaValue(cfg: FileMediaOptions, mode: "image" | "audio") {
@@ -180,8 +184,120 @@ export function FileMedia(props: { media?: FileMediaOptions; fallback: () => JSX
     ),
   )
 
-  const kindLabel = (value: "image" | "audio") =>
-    i18n.t(value === "image" ? "ui.fileMedia.kind.image" : "ui.fileMedia.kind.audio")
+  const kindLabel = (value: "image" | "audio" | "pdf" | "docx") => {
+    if (value === "image") return i18n.t("ui.fileMedia.kind.image")
+    if (value === "audio") return i18n.t("ui.fileMedia.kind.audio")
+    return value.toUpperCase()
+  }
+
+  const previewKind = createMemo(() => {
+    const media = cfg()
+    if (!media || media.mode === "off" || !media.path) return
+    return previewKindFromPath(media.path)
+  })
+
+  const [preview, setPreview] = createStore<{
+    key?: string
+    loading?: boolean
+    error?: boolean
+    content?: FileContent
+  }>({})
+
+  const previewRequest = createMemo(() => {
+    const media = cfg()
+    const k = previewKind()
+    if (!media || !k) return
+    const sync = media.current ?? (k === "pdf" || k === "docx" ? media.after ?? media.before : undefined)
+    if (sync !== undefined) return { key: `${k}:direct:${media.path}`, sync: sync as FileContent }
+    if (deleted()) return
+    if (!media.readFile) return
+    const p = media.path
+    if (!p) return
+    return { key: `${k}:remote:${p}`, path: p, readFile: media.readFile, onError: media.onError }
+  })
+
+  createEffect(() => {
+    const input = previewRequest()
+    if (!input) {
+      setPreview({ key: undefined, loading: false, error: false, content: undefined })
+      return
+    }
+
+    const sync = input.sync
+    if (sync !== undefined) {
+      setPreview({ key: input.key, loading: false, error: false, content: sync })
+      return
+    }
+
+    let active = true
+    if (untrack(() => preview.key) === input.key) setPreview({ loading: true, error: false })
+    else setPreview({ key: input.key, loading: true, error: false, content: undefined })
+    void input.readFile(input.path).then(
+      (result) => {
+        if (!active) return
+        if (result === undefined) {
+          input.onError?.({ kind: previewKind() === "docx" ? "docx" : "pdf" })
+          setPreview({ key: input.key, loading: false, error: true, content: undefined })
+          return
+        }
+        setPreview({ key: input.key, loading: false, error: false, content: result })
+      },
+      () => {
+        if (!active) return
+        input.onError?.({ kind: previewKind() === "docx" ? "docx" : "pdf" })
+        setPreview({ key: input.key, loading: false, error: true, content: undefined })
+      },
+    )
+    onCleanup(() => {
+      active = false
+    })
+  })
+
+  let pdfUrl: string | undefined
+  createEffect(
+    on(
+      () => {
+        if (previewKind() !== "pdf" || untrack(() => preview.content?.type) !== "binary") return
+        const value = untrack(() => preview.content?.content)
+        return typeof value === "string" && value ? value : undefined
+      },
+      (base64, dispose) => {
+        if (dispose && pdfUrl) {
+          URL.revokeObjectURL(pdfUrl)
+          pdfUrl = undefined
+        }
+        if (!base64) return
+        const binary = atob(base64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+        pdfUrl = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }))
+      },
+    ),
+  )
+  onCleanup(() => {
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl)
+      pdfUrl = undefined
+    }
+  })
+
+  const openButton = () => {
+    const media = cfg()
+    if (!media?.openWithSystem || !media.path) return null
+    const open = media.openWithSystem
+    return (
+      <button
+        type="button"
+        class="mx-auto mt-4 flex items-center gap-2 rounded-md border border-border-base bg-background-base px-3 py-1.5 text-13-regular text-text-strong"
+        onClick={() => void open(media.path!)}
+      >
+        <Icon name="open-file" size="small" />
+        {i18n.t("ui.fileMedia.openWithSystem")}
+      </button>
+    )
+  }
+
+  const previewContent = createMemo(() => preview.content)
 
   return (
     <Switch>
@@ -271,6 +387,77 @@ export function FileMedia(props: { media?: FileMediaOptions; fallback: () => JSX
           )
         })()}
       </Match>
+      <Match when={previewKind()}>
+        {(() => {
+          const k = previewKind()
+          if (!k) return props.fallback()
+          const label = kindLabel(k)
+          const content = previewContent()
+
+          if (preview.loading) {
+            return (
+              <div class="flex min-h-60 items-center justify-center px-6 py-4 text-center text-14-regular text-text-weak">
+                {i18n.t("ui.fileMedia.state.loading", { kind: label })}
+              </div>
+            )
+          }
+
+          if (preview.error && !content) {
+            return (
+              <div class="flex min-h-60 flex-col items-center justify-center gap-2 px-6 py-4 text-center">
+                <span class="text-14-regular text-text-weak">{i18n.t("ui.fileMedia.state.error", { kind: label })}</span>
+                {openButton()}
+              </div>
+            )
+          }
+
+          if (!content) {
+            return (
+              <div class="flex min-h-60 flex-col items-center justify-center gap-2 px-6 py-4 text-center">
+                <span class="text-14-regular text-text-weak">{i18n.t("ui.fileMedia.state.unavailable", { kind: label })}</span>
+                {openButton()}
+              </div>
+            )
+          }
+
+          if (k === "pdf") {
+            if (!pdfUrl) {
+              return (
+                <div class="flex min-h-60 flex-col items-center justify-center gap-2 px-6 py-4 text-center">
+                  <span class="text-14-regular text-text-weak">{i18n.t("ui.fileMedia.state.unavailable", { kind: label })}</span>
+                  {openButton()}
+                </div>
+              )
+            }
+            return (
+              <div class="docx-pdf-frame flex justify-center bg-background-stronger px-6 py-4">
+                <iframe
+                  src={pdfUrl}
+                  title={cfg()?.path}
+                  class="h-[70vh] max-h-[80vh] w-full max-w-4xl rounded border border-border-weak-base bg-white"
+                />
+              </div>
+            )
+          }
+
+          return (
+            <div class="flex flex-col gap-4 px-4 py-4">
+              <DocxPreview
+                content={content}
+                onError={() => {
+                  cfg()?.onError?.({ kind: "docx" })
+                  setPreview(
+                    produce((draft) => {
+                      draft.error = true
+                      draft.content = undefined
+                    }),
+                  )
+                }}
+              />
+            </div>
+          )
+        })()}
+      </Match>
       <Match when={isBinary()}>
         <div class="flex min-h-56 flex-col items-center justify-center gap-2 px-6 py-10 text-center">
           <div class="text-14-semibold text-text-strong">
@@ -283,6 +470,7 @@ export function FileMedia(props: { media?: FileMediaOptions; fallback: () => JSX
               return i18n.t("ui.fileMedia.binary.description.path", { path })
             })()}
           </div>
+          {openButton()}
         </div>
       </Match>
       <Match when={true}>{props.fallback()}</Match>

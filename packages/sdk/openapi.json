@@ -1,4 +1,4 @@
-{
+﻿{
   "openapi": "3.1.0",
   "info": {
     "title": "opencode",
@@ -15393,6 +15393,9 @@
             "$ref": "#/components/schemas/EventMessagePartDelta"
           },
           {
+            "$ref": "#/components/schemas/EventMessagePartProgress"
+          },
+          {
             "$ref": "#/components/schemas/EventSessionDiff"
           },
           {
@@ -19052,6 +19055,38 @@
                       }
                     },
                     "required": ["sessionID", "messageID", "partID", "field", "delta"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["id", "type", "properties"],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^evt_"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["message.part.progress"]
+                  },
+                  "properties": {
+                    "type": "object",
+                    "properties": {
+                      "sessionID": {
+                        "type": "string",
+                        "pattern": "^ses"
+                      },
+                      "part": {
+                        "$ref": "#/components/schemas/Part"
+                      },
+                      "time": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["sessionID", "part", "time"],
                     "additionalProperties": false
                   }
                 },
@@ -24143,6 +24178,9 @@
           },
           {
             "$ref": "#/components/schemas/MessagePartDelta"
+          },
+          {
+            "$ref": "#/components/schemas/MessagePartProgress"
           },
           {
             "$ref": "#/components/schemas/SessionDiff"
@@ -31545,6 +31583,60 @@
         "required": ["id", "type", "data"],
         "additionalProperties": false
       },
+      "MessagePartProgress": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^evt_"
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["message.part.progress"]
+          },
+          "durable": {
+            "type": "object",
+            "properties": {
+              "aggregateID": {
+                "type": "string"
+              },
+              "seq": {
+                "type": "integer"
+              },
+              "version": {
+                "type": "integer"
+              }
+            },
+            "required": ["aggregateID", "seq", "version"],
+            "additionalProperties": false
+          },
+          "location": {
+            "$ref": "#/components/schemas/LocationRef"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "type": "string",
+                "pattern": "^ses"
+              },
+              "part": {
+                "$ref": "#/components/schemas/Part"
+              },
+              "time": {
+                "type": "number"
+              }
+            },
+            "required": ["sessionID", "part", "time"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "type", "data"],
+        "additionalProperties": false
+      },
       "SessionDiff": {
         "type": "object",
         "properties": {
@@ -35464,6 +35556,38 @@
               }
             },
             "required": ["sessionID", "messageID", "partID", "field", "delta"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["id", "type", "properties"],
+        "additionalProperties": false
+      },
+      "EventMessagePartProgress": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^evt_"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["message.part.progress"]
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "sessionID": {
+                "type": "string",
+                "pattern": "^ses"
+              },
+              "part": {
+                "$ref": "#/components/schemas/Part"
+              },
+              "time": {
+                "type": "number"
+              }
+            },
+            "required": ["sessionID", "part", "time"],
             "additionalProperties": false
           }
         },

@@ -640,6 +640,15 @@ export const PartDelta = define({
   },
 })
 
+export const PartProgress = define({
+  type: "message.part.progress",
+  schema: {
+    sessionID: SessionID,
+    part: Part,
+    time: Schema.Finite,
+  },
+})
+
 export const Diff = define({
   type: "session.diff",
   schema: {
@@ -659,6 +668,7 @@ export const Error = define({
 export const Event = {
   ...events,
   PartDelta,
+  PartProgress,
   Diff,
   Error,
   Definitions: inventory(
@@ -670,6 +680,7 @@ export const Event = {
     events.PartUpdated,
     events.PartRemoved,
     PartDelta,
+    PartProgress,
     Diff,
     Error,
   ),

@@ -35,6 +35,10 @@ export interface Handle {
     toolCallID: string,
     update: (part: SessionV1.ToolPart) => SessionV1.ToolPart,
   ) => Effect.Effect<SessionV1.ToolPart | undefined>
+  readonly progressToolCall: (
+    toolCallID: string,
+    update: (part: SessionV1.ToolPart) => SessionV1.ToolPart,
+  ) => Effect.Effect<SessionV1.ToolPart | undefined>
   readonly completeToolCall: (
     toolCallID: string,
     output: {
@@ -148,6 +152,22 @@ const layer = Layer.effect(
         const match = yield* readToolCall(toolCallID)
         if (!match) return undefined
         const part = yield* session.updatePart(update(match.part))
+        ctx.toolcalls[toolCallID] = {
+          ...match.call,
+          partID: part.id,
+          messageID: part.messageID,
+          sessionID: part.sessionID,
+        }
+        return part
+      })
+
+      const progressToolCall = Effect.fn("SessionProcessor.progressToolCall")(function* (
+        toolCallID: string,
+        update: (part: SessionV1.ToolPart) => SessionV1.ToolPart,
+      ) {
+        const match = yield* readToolCall(toolCallID)
+        if (!match) return undefined
+        const part = yield* session.updatePartProgress(update(match.part))
         ctx.toolcalls[toolCallID] = {
           ...match.call,
           partID: part.id,
@@ -701,6 +721,7 @@ const layer = Layer.effect(
           return ctx.assistantMessage
         },
         updateToolCall,
+        progressToolCall,
         completeToolCall,
         process,
       } satisfies Handle

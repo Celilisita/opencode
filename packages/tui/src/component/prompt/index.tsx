@@ -41,6 +41,7 @@ import type { AssistantMessage, FilePart, UserMessage } from "@opencode-ai/sdk/v
 import { Locale } from "../../util/locale"
 import { errorMessage } from "../../util/error"
 import { formatDuration } from "../../util/format"
+import { buildSessionStatsLine } from "../../util/session-stats"
 import { createColors, createFrames } from "../../ui/spinner"
 import { useDialog } from "../../ui/dialog"
 import { DialogProvider as DialogProviderConnect } from "../dialog-provider"
@@ -53,6 +54,7 @@ import { DialogWorkspaceUnavailable } from "../dialog-workspace-unavailable"
 import { useArgs } from "../../context/args"
 import { OPENCODE_BASE_MODE, useBindings, useCommandShortcut, useLeaderActive, useOpencodeKeymap } from "../../keymap"
 import { useTuiConfig } from "../../config"
+import { confirmExit } from "../../util/exit-confirmation"
 import { usePromptWorkspace } from "./workspace"
 import { usePromptMove } from "./move"
 import { readLocalAttachment } from "./local-attachment"
@@ -279,6 +281,18 @@ export function Prompt(props: PromptProps) {
       context: pct ? `${Locale.number(tokens)} (${pct})` : Locale.number(tokens),
       cost: cost > 0 ? money.format(cost) : undefined,
     }
+  })
+
+  const stats = createMemo(() => {
+    if (!props.sessionID) return
+    const messages = sync.data.message[props.sessionID]
+    if (!messages || messages.length === 0) return
+    return buildSessionStatsLine({
+      messages,
+      parts: (messageID) => sync.data.part[messageID],
+      session: sync.session.get(props.sessionID),
+      firstDelta: sync.firstDelta,
+    })
   })
 
   const [store, setStore] = createStore<{
@@ -961,8 +975,8 @@ export function Prompt(props: PromptProps) {
     const agent = local.agent.current()
     if (!agent) return false
     const trimmed = store.prompt.input.trim()
-    if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q") {
-      void exit()
+    if (trimmed === "exit" || trimmed === "quit" || trimmed === ":q" || trimmed === "/exit" || trimmed === "/quit") {
+      if (await confirmExit(dialog, tuiConfig.exit_confirmation ?? "none", paths.state, paths.cwd)) void exit()
       return true
     }
     const selectedModel = local.model.current()
@@ -1510,6 +1524,13 @@ export function Prompt(props: PromptProps) {
             }
           />
         </box>
+        <Show when={stats()}>
+          <box width="100%" flexShrink={0}>
+            <text fg={theme.textMuted} wrapMode="none">
+              {stats()}
+            </text>
+          </box>
+        </Show>
         <box width="100%" flexDirection="row" justifyContent="space-between">
           <Switch>
             <Match when={status().type !== "idle"}>

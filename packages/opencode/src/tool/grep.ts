@@ -8,9 +8,9 @@ import DESCRIPTION from "./grep.txt"
 import * as Tool from "./tool"
 
 export const Parameters = Schema.Struct({
-  pattern: Schema.String.annotate({ description: "The regex pattern to search for in file contents" }),
+  pattern: Schema.String.annotate({ description: "在文件内容中搜索的正则表达式" }),
   path: Schema.optional(Schema.String).annotate({
-    description: "The directory to search in. Defaults to the current working directory.",
+    description: "搜索所在目录。默认为当前工作目录。",
   }),
   include: Schema.optional(Schema.String).annotate({
     description: 'File pattern to include in the search (e.g. "*.js", "*.{ts,tsx}")',

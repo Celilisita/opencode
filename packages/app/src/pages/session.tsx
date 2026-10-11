@@ -61,6 +61,7 @@ import { TerminalProvider, useTerminal } from "@/context/terminal"
 import { PromptInput } from "@/components/prompt-input"
 import { PromptInputV2Composer, usePromptInputV2Controller } from "@/components/prompt-input-v2"
 import { useSettingsCommand } from "@/components/settings-dialog"
+import { SessionStatsStrip } from "@/components/session/session-stats-strip"
 import { setCursorPosition } from "@/components/prompt-input/editor-dom"
 import { promptLength } from "@/components/prompt-input/history"
 import { type FollowupDraft, sendFollowupDraft } from "@/components/prompt-input/submit"
@@ -70,7 +71,15 @@ import {
   createSessionComposerRegionController,
   SessionComposerRegion,
 } from "@/pages/session/composer"
-import { createOpenReviewFile, createSessionTabs, createSizing, shouldShowFileTree } from "@/pages/session/helpers"
+import {
+  createOpenReviewFile,
+  createOpenSessionFileTab,
+  createSessionTabs,
+  createSizing,
+  isAbsolutePath,
+  isAbsolutePathOutsideDirectory,
+  shouldShowFileTree,
+} from "@/pages/session/helpers"
 import { MessageTimeline } from "@/pages/session/timeline/message-timeline"
 import { createTimelineModel } from "@/pages/session/timeline/model"
 import { type DiffStyle, SessionReviewTab, type SessionReviewTabProps } from "@/pages/session/review-tab"
@@ -1161,6 +1170,156 @@ export default function Page() {
     loadFile: file.load,
   })
 
+  const openSessionFile = createOpenSessionFileTab({
+    normalizeTab,
+    openTab: tabs().open,
+    pathFromTab: file.pathFromTab,
+    loadFile: file.load,
+    openReviewPanel,
+    setActive: tabs().setActive,
+  })
+
+  // Assistant answers often reference relative file names next to the directory
+  // they live in (e.g. a `Y:\repo\src\tool\` bullet followed by `read.ts`, or a
+  // relative `agent\` entry nested under an absolute config directory). Collect
+  // the directory-style code spans preceding the clicked path in the session
+  // messages so the relative path can be resolved against them.
+  const messageDirectoryBases = (clicked: string): string[] => {
+    const list = messages().slice(-200)
+    for (let i = list.length - 1; i >= 0; i--) {
+      const parts = sync().data.part[list[i]!.id]
+      if (!parts) continue
+      for (const part of parts) {
+        if (part.type !== "text") continue
+        const text = part.text
+        const index = text.lastIndexOf(clicked)
+        if (index <= 0) continue
+        const before = text.slice(0, index)
+        const normalize = (span: string) => span.replace(/\\/g, "/").replace(/\/+$/, "")
+        const absolute: Array<{ span: string; index: number }> = []
+        const relative: Array<{ span: string; index: number }> = []
+        for (const match of before.matchAll(/`([^`\n]+)`/g)) {
+          const span = match[1]
+          const entry = { span, index: match.index }
+          if (span.endsWith("/") || span.endsWith("\\")) {
+            ;(isAbsolutePath(span) ? absolute : relative).push(entry)
+          } else if (isAbsolutePath(span) && !/\.[A-Za-z0-9]{1,8}$/.test(span)) {
+            absolute.push(entry)
+          }
+        }
+        const candidates: string[] = []
+        const seen = new Set<string>()
+        const push = (base: string) => {
+          if (seen.has(base)) return
+          seen.add(base)
+          candidates.push(base)
+        }
+        for (let a = absolute.length - 1; a >= 0; a--) push(normalize(absolute[a]!.span))
+        for (const rel of relative) {
+          const enclosing = [...absolute].reverse().find((entry) => entry.index < rel.index)
+          if (enclosing) push(`${normalize(enclosing.span)}/${normalize(rel.span)}`)
+        }
+        return candidates.slice(0, 12)
+      }
+    }
+    return []
+  }
+
+  const resolveRelativeMarkdownPath = async (
+    raw: string,
+    path: string,
+    line: number | undefined,
+    openPath: (path: string, app?: string) => Promise<void>,
+  ) => {
+    const normalizedRel = path.replace(/\\/g, "/")
+    const looksLikeDir = path.endsWith("/") || path.endsWith("\\")
+    const projectDir = sdk().directory.replace(/\\/g, "/")
+    const projectCandidate = `${projectDir}/${normalizedRel}`
+    const seen = new Set<string>([projectCandidate])
+    const candidates = [
+      ...messageDirectoryBases(raw)
+        .map((base) => `${base}/${normalizedRel}`)
+        .filter((candidate) => !seen.has(candidate) && seen.add(candidate)),
+      projectCandidate,
+    ]
+    const exists = (candidate: string) =>
+      looksLikeDir
+        ? sdk().client.file
+            .list({ path: candidate })
+            .then(() => true)
+            .catch(() => false)
+        : sdk().client.file
+            .read({ path: candidate })
+            .then(() => true)
+            .catch(() => false)
+    let hit: string | undefined
+    for (const candidate of candidates) {
+      if (await exists(candidate)) {
+        hit = candidate
+        break
+      }
+    }
+    const selectLines = (target: string) => {
+      if (line === undefined) return
+      const normalized = file.normalize(target)
+      if (normalized) file.setSelectedLines(normalized, { start: line, end: line })
+    }
+    if (hit && hit !== projectCandidate) {
+      if (looksLikeDir) {
+        void openPath(hit).catch(() => {})
+      } else {
+        openSessionFile(file.tab(hit))
+        selectLines(hit)
+      }
+      return
+    }
+    // Not found in any message-context directory: fall back to the project
+    // directory (sidebar shows the resolved path on error) plus a native open.
+    openSessionFile(file.tab(path))
+    selectLines(path)
+    void openPath(projectCandidate).catch(() => {})
+  }
+
+  const openMarkdownPath = (raw: string) => {
+    const sep = raw.lastIndexOf(":")
+    const path = sep > 1 && /^\d+$/.test(raw.slice(sep + 1)) ? raw.slice(0, sep) : raw
+    const line = path === raw ? undefined : Number(raw.slice(sep + 1))
+    const openPath = platform.openPath
+    const selectLines = () => {
+      if (line === undefined) return
+      const normalized = file.normalize(path)
+      if (normalized) file.setSelectedLines(normalized, { start: line, end: line })
+    }
+    if (openPath && ServerConnection.local(serverSDK().server)) {
+      const outside = isAbsolutePathOutsideDirectory(path, sdk().directory)
+      const looksLikeDir = path.endsWith("/") || path.endsWith("\\")
+      if (outside && looksLikeDir) {
+        void openPath(path)
+        return
+      }
+      if (outside) {
+        void sdk()
+          .client.file.read({ path })
+          .then(() => {
+            openSessionFile(file.tab(path))
+            selectLines()
+          })
+          .catch(() => {
+            openSessionFile(file.tab(path))
+            selectLines()
+            void openPath(path).catch(() => {})
+          })
+        return
+      }
+      if (!isAbsolutePath(path)) {
+        void resolveRelativeMarkdownPath(raw, path, line, openPath)
+        return
+      }
+    }
+    openSessionFile(file.tab(path))
+    selectLines()
+  }
+
   const changesLabel = (option: ChangeMode) => {
     if (option === "git") return language.t("ui.sessionReview.title.git")
     if (option === "branch") return language.t("ui.sessionReview.title.branch")
@@ -2107,6 +2266,7 @@ export default function Page() {
                     if (root) scheduleScrollState(root)
                   }}
                   userMessages={visibleUserMessages()}
+                  onOpenPath={openMarkdownPath}
                   setHistoryAnchor={(handlers) => {
                     captureHistoryAnchor = handlers.capture
                     restoreHistoryAnchor = handlers.restore
@@ -2179,6 +2339,7 @@ export default function Page() {
           return (
             <SessionComposerRegion
               controller={controller}
+              stats={<SessionStatsStrip />}
               promptInput={
                 <Show
                   when={newSessionDesign()}

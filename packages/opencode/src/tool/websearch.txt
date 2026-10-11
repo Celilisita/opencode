@@ -1,14 +1,14 @@
-- Search the web using the session's web search provider - performs real-time web searches and can scrape content from specific URLs
-- Provides up-to-date information for current events and recent data
-- Supports configurable result counts and returns the content from the most relevant websites
-- Use this tool for accessing information beyond knowledge cutoff
-- Searches are performed automatically within a single API call
+- 使用会话的 web 搜索提供商搜索网络 - 执行实时网络搜索，并可从特定 URL 抓取内容
+- 为当前事件和最新数据提供时效信息
+- 支持可配置的结果数量，返回最相关网站的内容
+- 需要访问知识截止日期之后的信息时使用该工具
+- 搜索在单次 API 调用内自动完成
 
-Usage notes:
-  - Supports live crawling modes when available: 'fallback' (backup if cached unavailable) or 'preferred' (prioritize live crawling)
-  - Search types when available: 'auto' (balanced), 'fast' (quick results), 'deep' (comprehensive search)
-  - Configurable context length for optimal LLM integration
-  - Domain filtering and advanced search options available
+用法说明：
+  - 可用时支持实时抓取模式：'fallback'（缓存不可用时备用）或 'preferred'（优先实时抓取）
+  - 可用时的搜索类型：'auto'（均衡）、'fast'（快速结果）、'deep'（全面搜索）
+  - 可配置上下文长度以优化 LLM 集成
+  - 提供域名过滤和高级搜索选项
 
-The current year is {{year}}. You MUST use this year when searching for recent information or current events
-- Example: If the current year is 2026 and the user asks for "latest AI news", search for "AI news 2026", NOT "AI news 2025"
+当前年份是 {{year}}。搜索最新信息或当前事件时，必须使用该年份
+- 示例：若当前年份是 2026，用户要"最新 AI 新闻"，就搜"AI 新闻 2026"，而不是"AI 新闻 2025"

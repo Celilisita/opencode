@@ -1091,7 +1091,8 @@ export function createServerSession(
         )
         return
       }
-      case "message.part.updated": {
+      case "message.part.updated":
+      case "message.part.progress": {
         const part = (event.properties as { part: Part }).part
         if (SKIP_PARTS.has(part.type)) return
         const messages = data.message[part.sessionID]

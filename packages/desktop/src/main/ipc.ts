@@ -1,7 +1,8 @@
 import { execFile } from "node:child_process"
-import { stat } from "node:fs/promises"
-import { basename, join } from "node:path"
-import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from "electron"
+import { readFile, stat } from "node:fs/promises"
+import { basename, isAbsolute, join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { app, BrowserWindow, clipboard, dialog, ipcMain, nativeImage, shell } from "electron"
 import type { IpcMainEvent, IpcMainInvokeEvent } from "electron"
 import type { DesktopMenuAction } from "@opencode-ai/app/desktop-menu"
 import { parseDesktopNativeBundle, type DesktopNativeBundle } from "@opencode-ai/app/i18n/desktop-native"
@@ -31,6 +32,71 @@ const pickerFilters = (ext?: string[]) => {
 }
 
 const pickedFiles = createPickedFileAuthorizations()
+const maxMarkdownImageBytes = 25 * 1024 * 1024
+
+const sniffImageMimeType = (bytes: Buffer): string | undefined => {
+  if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg"
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  )
+    return "image/webp"
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47)
+    return "image/png"
+  if (bytes.length >= 4 && bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x38)
+    return "image/gif"
+  // SVG 是文本格式，无魔数；用文件头内容特征判断
+  if (bytes.length >= 5) {
+    const head = bytes.subarray(0, Math.min(512, bytes.length)).toString("utf8").trimStart()
+    if (
+      head.startsWith("<svg") ||
+      head.startsWith("<?xml") ||
+      head.startsWith("<!DOCTYPE svg") ||
+      /^<svg[\s>]/i.test(head)
+    )
+      return "image/svg+xml"
+  }
+  return undefined
+}
+
+async function readLocalImage(source: string) {
+  const value = source.split(/[?#]/, 1)[0]
+  if (!value) return null
+  const candidates: string[] = []
+  if (value.startsWith("file:")) {
+    candidates.push(fileURLToPath(value))
+  } else {
+    candidates.push(value)
+    if (value.includes("%")) {
+      try {
+        const decoded = decodeURIComponent(value)
+        if (decoded !== value) candidates.push(decoded)
+      } catch {}
+    }
+  }
+  for (const filePath of candidates) {
+    if (!isAbsolute(filePath)) continue
+    const info = await stat(filePath).catch(() => undefined)
+    if (!info?.isFile() || info.size > maxMarkdownImageBytes) continue
+    const image = nativeImage.createFromPath(filePath)
+    if (!image.isEmpty()) {
+      return { content: image.toPNG().toString("base64"), mimeType: "image/png" as const }
+    }
+    const bytes = await readFile(filePath).catch(() => undefined)
+    if (bytes) {
+      const mimeType = sniffImageMimeType(bytes)
+      if (mimeType) return { content: bytes.toString("base64"), mimeType }
+    }
+  }
+  return null
+}
 
 type Deps = {
   killSidecar: () => Promise<void> | void
@@ -194,6 +260,14 @@ export function registerIpcHandlers(deps: Deps) {
 
   ipcMain.handle("release-picked-files", (event: IpcMainInvokeEvent, token: string) => {
     pickedFiles.release(event.sender.id, token)
+  })
+
+  ipcMain.handle("read-local-image", (event: IpcMainInvokeEvent, source: string) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win || win.isDestroyed() || win.webContents !== event.sender || event.senderFrame !== event.sender.mainFrame) {
+      throw new Error("Invalid local image sender")
+    }
+    return readLocalImage(source)
   })
 
   ipcMain.handle(

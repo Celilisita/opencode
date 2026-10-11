@@ -14,11 +14,11 @@ export const Parameters = Schema.Struct({
   url: Schema.String.annotate({ description: "The URL to fetch content from" }),
   format: Schema.Literals(["text", "markdown", "html"])
     .annotate({
-      description: "The format to return the content in (text, markdown, or html). Defaults to markdown.",
+      description: "返回内容的格式（text、markdown 或 html）。默认为 markdown。",
       default: "markdown",
     })
     .pipe(Schema.withDecodingDefault(Effect.succeed("markdown" as const))),
-  timeout: Schema.optional(Schema.Number).annotate({ description: "Optional timeout in seconds (max 120)" }),
+  timeout: Schema.optional(Schema.Number).annotate({ description: "可选超时时间（秒，最大 120）" }),
 })
 
 export const WebFetchTool = Tool.define(

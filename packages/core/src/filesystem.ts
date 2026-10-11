@@ -65,10 +65,13 @@ const baseLayer = Layer.effect(
     const root = yield* fs.realPath(location.directory).pipe(Effect.orDie)
     const resolve = Effect.fnUntraced(function* (input?: RelativePath) {
       const absolute = path.resolve(location.directory, input ?? ".")
-      if (!FSUtil.contains(location.directory, absolute))
+      // Explicit absolute inputs are trusted; the containment guards only
+      // protect relative inputs from traversing out of the location.
+      const inputAbsolute = typeof input === "string" ? path.isAbsolute(input) : false
+      if (!inputAbsolute && !FSUtil.contains(location.directory, absolute))
         return yield* Effect.die(new Error("Path escapes the location"))
       const real = yield* fs.realPath(absolute).pipe(Effect.orDie)
-      if (!FSUtil.contains(root, real)) return yield* Effect.die(new Error("Path escapes the location"))
+      if (!inputAbsolute && !FSUtil.contains(root, real)) return yield* Effect.die(new Error("Path escapes the location"))
       return { absolute, real, directory: location.directory, root }
     })
     return Service.of({

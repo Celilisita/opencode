@@ -1,10 +1,11 @@
 export function formatDuration(secs: number) {
   if (secs <= 0) return ""
-  if (secs < 60) return `${secs}s`
+  const round1 = (value: number) => String(Math.round(value * 10) / 10)
+  if (secs < 60) return `${round1(secs)}s`
   if (secs < 3600) {
     const mins = Math.floor(secs / 60)
-    const remaining = secs % 60
-    return remaining > 0 ? `${mins}m ${remaining}s` : `${mins}m`
+    const remaining = round1(secs % 60)
+    return remaining === "0" ? `${mins}m` : `${mins}m ${remaining}s`
   }
   if (secs < 86400) {
     const hours = Math.floor(secs / 3600)

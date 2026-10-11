@@ -36,6 +36,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "Nyissa meg a fájlt",
   "ui.sessionReview.selection.line": "{{line}}. sor",
   "ui.sessionReview.selection.lines": "{{start}}-{{end}}. sor",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "kép",
   "ui.fileMedia.kind.audio": "hang-",
   "ui.fileMedia.state.removed": "{{kind}} fájl eltávolítva.",

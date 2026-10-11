@@ -34,6 +34,7 @@ export const dict = {
   "ui.sessionReviewV2.empty.noGit.actionLoading": "กำลังสร้าง Git รีโพซิทอรี...",
   "ui.sessionReviewV2.empty.changes.title": "ยังไม่มีการเปลี่ยนแปลงไฟล์",
   "ui.sessionReviewV2.empty.changes.description": "การเปลี่ยนแปลงในโปรเจกต์จะแสดงที่นี่",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "รูปภาพ",
   "ui.fileMedia.kind.audio": "เสียง",
   "ui.fileMedia.state.removed": "ลบ{{kind}}แล้ว",

@@ -34,6 +34,7 @@ export const dict = {
   "ui.sessionReviewV2.empty.noGit.actionLoading": "Creando repositorio Git...",
   "ui.sessionReviewV2.empty.changes.title": "Aún no hay cambios en los archivos",
   "ui.sessionReviewV2.empty.changes.description": "Los cambios del proyecto aparecerán aquí",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "imagen",
   "ui.fileMedia.kind.audio": "audio",
   "ui.fileMedia.state.removed": "Archivo de {{kind}} eliminado",

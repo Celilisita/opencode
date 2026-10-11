@@ -34,6 +34,7 @@ export const dict = {
   "ui.sessionReview.openFile": "ເປີດໄຟລ໌",
   "ui.sessionReview.selection.line": "ແຖວ {{line}}",
   "ui.sessionReview.selection.lines": "ສາຍ {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "ຮູບ",
   "ui.fileMedia.kind.audio": "ສຽງ",
   "ui.fileMedia.state.removed": "ລຶບໄຟລ໌ {{kind}} ອອກແລ້ວ.",

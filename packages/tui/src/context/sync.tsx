@@ -149,6 +149,9 @@ export const {
 
     const fullSyncedSessions = new Set<string>()
     const syncingSessions = new Map<string, Promise<void>>()
+    // messageID -> time the first streamed delta for that message was received.
+    // Non-reactive on purpose: readers recompute when the part store mutates.
+    const firstDelta = new Map<string, number>()
     const hydratingSessions = new Map<string, { messages: Set<string>; parts: Set<string> }>()
     const touchMessage = (sessionID: string, messageID: string) => {
       hydratingSessions.get(sessionID)?.messages.add(messageID)
@@ -360,6 +363,7 @@ export const {
         }
         case "message.removed": {
           touchMessage(event.properties.sessionID, event.properties.messageID)
+          firstDelta.delete(event.properties.messageID)
           const messages = store.message[event.properties.sessionID]
           const index = messages.findIndex((message) => message.id === event.properties.messageID)
           if (index !== -1) {
@@ -396,6 +400,9 @@ export const {
         }
 
         case "message.part.delta": {
+          if (!firstDelta.has(event.properties.messageID)) {
+            firstDelta.set(event.properties.messageID, Date.now())
+          }
           const parts = store.part[event.properties.messageID]
           if (!parts) break
           const result = search(parts, event.properties.partID, (part) => part.id)
@@ -558,6 +565,7 @@ export const {
     const result = {
       data: store,
       set: setStore,
+      firstDelta,
       get status() {
         return store.status
       },

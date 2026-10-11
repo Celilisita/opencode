@@ -35,6 +35,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "फ़ाइल खोलें",
   "ui.sessionReview.selection.line": "लाइन {{line}}",
   "ui.sessionReview.selection.lines": "लाइनें {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "छवि",
   "ui.fileMedia.kind.audio": "ऑडियो",
   "ui.fileMedia.state.removed": "{{kind}} फ़ाइल हटा दी गई।",

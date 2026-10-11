@@ -34,6 +34,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "Obre el fitxer",
   "ui.sessionReview.selection.line": "línia {{line}}",
   "ui.sessionReview.selection.lines": "línies {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "imatge",
   "ui.fileMedia.kind.audio": "àudio",
   "ui.fileMedia.state.removed": "S'ha eliminat el fitxer {{kind}}.",

@@ -14,6 +14,7 @@ describe("inlineCodeKind", () => {
     expect(inlineCodeKind(`sync.data.session`)).toBeUndefined()
     expect(inlineCodeKind(`window.api`)).toBeUndefined()
     expect(inlineCodeKind(`1.2`)).toBeUndefined()
+    expect(inlineCodeKind(`see app.tsx here`)).toBeUndefined()
   })
 
   test("detects file and directory paths", () => {
@@ -33,6 +34,8 @@ describe("inlineCodeKind", () => {
     expect(inlineCodeKind(`pnpm-lock.yaml`)).toBe("path")
     expect(inlineCodeKind(`packages/desktop-electron`)).toBe("path")
     expect(inlineCodeKind(`~/.config/opencode`)).toBe("path")
+    expect(inlineCodeKind(`/Users/zhongwch/Documents/clpeak/CMakeLists.txt`)).toBe("path")
+    expect(inlineCodeKind(`/Users/zhongwch/Documents/Default Project/opencode-link-test.txt`)).toBe("path")
     expect(inlineCodeKind(`@opencode-ai/app`)).toBe("path")
     expect(inlineCodeKind(`session/status`)).toBe("path")
   })

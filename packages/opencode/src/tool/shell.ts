@@ -290,9 +290,19 @@ const ask = Effect.fn("ShellTool.ask")(function* (ctx: Tool.Context, scan: Scan,
   })
 })
 
+// Windows PowerShell 默认用控制台代码页（本机 zh-CN 为 CP936/GBK）写 stdout，
+// 而本工具按 UTF-8 解码输出；强制 UTF-8 避免中文输出变成不可恢复的乱码。
+const PS_UTF8_PREFIX = `[Console]::OutputEncoding = $OutputEncoding = [System.Text.Encoding]::UTF8; `
+
 function cmd(shell: string, command: string, cwd: string, env: NodeJS.ProcessEnv) {
   if (process.platform === "win32" && Shell.ps(shell)) {
-    return ChildProcess.make(shell, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", command], {
+    return ChildProcess.make(shell, [
+      "-NoLogo",
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      PS_UTF8_PREFIX + command,
+    ], {
       cwd,
       env,
       stdin: "ignore",

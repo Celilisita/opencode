@@ -1,65 +1,66 @@
-Create or update `AGENTS.md` for this repository.
+为本仓库创建或更新 `AGENTS.md`。
 
-The goal is a compact instruction file that helps future OpenCode sessions avoid mistakes and ramp up quickly. Every line should answer: "Would an agent likely miss this without help?" If not, leave it out.
+目标是一份紧凑的指令文件，帮助未来的 OpenCode 会话避免犯错并快速上手。每一行都应回答："没有它，agent 很可能漏掉吗？"如果不会，就删掉。
 
-User-provided focus or constraints (honor these):
+用户提供的重点或约束（须遵守）：
 $ARGUMENTS
 
-## How to investigate
+## 如何调查
 
-Read the highest-value sources first:
-- `README*`, root manifests, workspace config, lockfiles
-- build, test, lint, formatter, typecheck, and codegen config
-- CI workflows and pre-commit / task runner config
-- existing instruction files (`AGENTS.md`, `CLAUDE.md`, `.cursor/rules/`, `.cursorrules`, `.github/copilot-instructions.md`)
-- repo-local OpenCode config such as `opencode.json`
+优先阅读价值最高的来源：
+- `README*`、根清单文件、工作区配置、锁文件
+- 构建、测试、lint、格式化、类型检查、代码生成配置
+- CI 工作流与 pre-commit / 任务运行器配置
+- 既有指令文件（`AGENTS.md`、`CLAUDE.md`、`.cursor/rules/`、`.cursorrules`、`.github/copilot-instructions.md`）
+- 仓库本地的 OpenCode 配置，如 `opencode.json`
 
-If architecture is still unclear after reading config and docs, inspect a small number of representative code files to find the real entrypoints, package boundaries, and execution flow. Prefer reading the files that explain how the system is wired together over random leaf files.
+若读完配置与文档后仍不清楚架构，就抽查少量有代表性的代码文件，找出真正的入口、包边界与执行流。与其随机读叶子文件，不如读那些解释系统如何串联起来的文件。
 
-Prefer executable sources of truth over prose. If docs conflict with config or scripts, trust the executable source and only keep what you can verify.
+优先信任可执行的真相来源，而非文字描述。若文档与配置或脚本冲突，以可执行来源为准，只保留你能核实的内容。
 
-## What to extract
+## 要提取什么
 
-Look for the highest-signal facts for an agent working in this repo:
-- exact developer commands, especially non-obvious ones
-- how to run a single test, a single package, or a focused verification step
-- required command order when it matters, such as `lint -> typecheck -> test`
-- monorepo or multi-package boundaries, ownership of major directories, and the real app/library entrypoints
-- framework or toolchain quirks: generated code, migrations, codegen, build artifacts, special env loading, dev servers, infra deploy flow
-- testing quirks: fixtures, integration test prerequisites, snapshot workflows, required services, flaky or expensive suites
-- important constraints from existing instruction files worth preserving
+寻找对在本仓库工作的 agent 最有价值的事实：
+- 确切的开发命令，尤其是那些不明显的
+- 如何跑单个测试、单个包，或一次聚焦的验证步骤
+- 顺序重要时所需的命令顺序，例如 `lint -> typecheck -> test`
+- monorepo 或多包边界、主要目录的归属，以及真正的应用/库入口
+- 框架或工具链的怪癖：生成代码、迁移、代码生成、构建产物、特殊的环境加载、开发服务器、基础设施部署流程
+- 与默认不同的仓库专属风格或工作流约定
+- 测试怪癖：fixture、集成测试前置条件、快照工作流、所需服务、不稳定或昂贵的测试套件
+- 来自既有指令文件、值得保留的重要约束
 
-Good `AGENTS.md` content is usually hard-earned context that took reading multiple files to infer.
+好的 `AGENTS.md` 内容通常是来之不易的上下文，需要读多个文件才能推断出来。
 
-## Questions
+## 提问
 
-Only ask the user questions if the repo cannot answer something important. Use the `question` tool for one short batch at most.
+只有在仓库无法回答某个重要问题时，才向用户提问。最多用 `question` 工具做一小批提问。
 
-Good questions:
-- undocumented team conventions
-- branch / PR / release expectations
-- missing setup or test prerequisites that are known but not written down
+好的问题：
+- 未记录的团队约定
+- 分支 / PR / 发布预期
+- 已知但未写下的缺失的安装或测试前置条件
 
-Do not ask about anything the repo already makes clear.
+凡仓库已明确说明的都不要问。
 
-## Writing rules
+## 写作规则
 
-Include only high-signal, repo-specific guidance such as:
-- exact commands and shortcuts the agent would otherwise guess wrong
-- architecture notes that are not obvious from filenames
-- conventions that differ from language or framework defaults
-- setup requirements, environment quirks, and operational gotchas
-- references to existing instruction sources that matter
+只包含高价值、仓库专属的指引，例如：
+- agent 否则会猜错的准确命令与快捷方式
+- 从文件名看不出的架构说明
+- 与语言或框架默认不同的约定
+- 安装要求、环境怪癖与运维坑点
+- 对重要既有指令来源的引用
 
-Exclude:
-- generic software advice
-- long tutorials or exhaustive file trees
-- obvious language conventions
-- speculative claims or anything you could not verify
-- content better stored in another file referenced via `opencode.json` `instructions`
+排除：
+- 通用软件建议
+- 冗长教程或详尽文件树
+- 显而易见的语言约定
+- 推测性说法或任何你无法核实的内容
+- 更适合放在其它文件中、通过 `opencode.json` 的 `instructions` 引用的内容
 
-When in doubt, omit.
+拿不准时，省略。
 
-Prefer short sections and bullets. If the repo is simple, keep the file simple. If the repo is large, summarize the few structural facts that actually change how an agent should work.
+优先用简短小节和要点。仓库简单就把文件写简单。仓库庞大就概述少数真正改变 agent 工作方式的结构性事实。
 
-If `AGENTS.md` already exists at `${path}`, improve it in place rather than rewriting blindly. Preserve verified useful guidance, delete fluff or stale claims, and reconcile it with the current codebase.
+若 `${path}` 处已存在 `AGENTS.md`，就地改进它，而不是盲目重写。保留已验证的有用指引，删除废话或过时说法，并使其与当前代码库一致。

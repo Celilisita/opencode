@@ -117,6 +117,7 @@ export interface SessionReviewProps {
   diffs: RawReviewDiff[]
   onViewFile?: (file: string) => void
   readFile?: (path: string) => Promise<FileContent | undefined>
+  openWithSystem?: (path: string) => void | Promise<void>
   lineCommentMention?: LineCommentEditorProps["mention"]
 }
 
@@ -636,6 +637,7 @@ export const SessionReview = (props: SessionReviewProps) => {
                                       path: file,
                                       deleted: diff().status === "deleted",
                                       readFile: diff().status === "deleted" ? undefined : props.readFile,
+                                      openWithSystem: props.openWithSystem,
                                     }}
                                   />
                                 </Match>

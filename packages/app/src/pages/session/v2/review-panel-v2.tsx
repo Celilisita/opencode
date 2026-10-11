@@ -20,6 +20,7 @@ import type {
 } from "@opencode-ai/session-ui/session-review"
 import FileTreeV2 from "@/components/file-tree-v2"
 import { useLanguage } from "@/context/language"
+import { usePlatform } from "@/context/platform"
 import { useSDK } from "@/context/sdk"
 import {
   filterRenderableDiff,
@@ -109,6 +110,16 @@ export function ReviewPanelV2(props: ReviewPanelV2Props) {
         return undefined
       })
 
+  const platform = usePlatform()
+  const platformOpenPath = platform.openPath
+  const openWithSystem = platformOpenPath
+    ? (p: string) => {
+        const d = sdk().directory
+        const abs = d && !/^[a-z]:[\\/]/i.test(p) && !p.startsWith("/") ? [d, p].join("/") : p
+        void platformOpenPath(abs)
+      }
+    : undefined
+
   return (
     <SessionReviewV2
       title={props.title}
@@ -151,6 +162,7 @@ export function ReviewPanelV2(props: ReviewPanelV2Props) {
                   diffStyle={props.diffStyle}
                   expandMode={props.state.expandMode()}
                   readFile={readFile}
+                  openWithSystem={openWithSystem}
                   onLineComment={props.onLineComment}
                   onLineCommentUpdate={props.onLineCommentUpdate}
                   onLineCommentDelete={props.onLineCommentDelete}

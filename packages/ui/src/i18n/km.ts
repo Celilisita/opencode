@@ -35,6 +35,7 @@ export const dict = {
   "ui.sessionReview.openFile": "បើកឯកសារ",
   "ui.sessionReview.selection.line": "បន្ទាត់ {{line}}",
   "ui.sessionReview.selection.lines": "បន្ទាត់ {{start}}-{{end}}\nរូបភាព",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "រូបភាព",
   "ui.fileMedia.kind.audio": "សំឡេង",
   "ui.fileMedia.state.removed": "បានលុបឯកសារ {{kind}} ។",

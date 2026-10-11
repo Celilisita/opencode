@@ -40,6 +40,7 @@ export const dict = {
   "ui.sessionReviewV2.empty.changes.title": "Henüz dosya değişikliği yok",
   "ui.sessionReviewV2.empty.changes.description": "Proje değişiklikleri burada görünecek",
 
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "görsel",
   "ui.fileMedia.kind.audio": "ses",
   "ui.fileMedia.state.removed": "{{kind}} dosyası kaldırıldı.",

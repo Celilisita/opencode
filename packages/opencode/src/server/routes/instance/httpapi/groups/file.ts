@@ -3,6 +3,7 @@ import { NonNegativeInt } from "@opencode-ai/core/schema"
 import { LSP } from "@/lsp/lsp"
 import { Schema } from "effect"
 import { HttpApi, HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/unstable/httpapi"
+import { ApiNotFoundError } from "../errors"
 import { Authorization } from "../middleware/authorization"
 import { InstanceContextMiddleware } from "../middleware/instance-context"
 import {
@@ -148,6 +149,7 @@ export const FileApi = HttpApi.make("file")
         HttpApiEndpoint.get("content", FilePaths.content, {
           query: FileQuery,
           success: described(LegacyContent, "File content"),
+          error: [ApiNotFoundError],
         }).annotateMerge(
           OpenApi.annotations({
             identifier: "file.read",

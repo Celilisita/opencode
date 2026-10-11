@@ -11,6 +11,7 @@ import type {
 import type { SelectedLineRange } from "@/context/file"
 import { useSDK } from "@/context/sdk"
 import { useLayout } from "@/context/layout"
+import { usePlatform } from "@/context/platform"
 import type { LineComment } from "@/context/comments"
 
 export type DiffStyle = "unified" | "split"
@@ -52,6 +53,15 @@ export function SessionReviewTab(props: SessionReviewTabProps) {
 
   const sdk = useSDK()
   const layout = useLayout()
+  const platform = usePlatform()
+  const platformOpenPath = platform.openPath
+  const openWithSystem = platformOpenPath
+    ? (p: string) => {
+        const d = sdk().directory
+        const abs = d && !/^[a-z]:[\\/]/i.test(p) && !p.startsWith("/") ? [d, p].join("/") : p
+        void platformOpenPath(abs)
+      }
+    : undefined
 
   const readFile = async (path: string) => {
     return sdk()
@@ -159,6 +169,7 @@ export function SessionReviewTab(props: SessionReviewTabProps) {
       onViewFile={props.onViewFile}
       focusedFile={props.focusedFile}
       readFile={readFile}
+      openWithSystem={openWithSystem}
       onLineComment={props.onLineComment}
       onLineCommentUpdate={props.onLineCommentUpdate}
       onLineCommentDelete={props.onLineCommentDelete}

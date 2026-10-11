@@ -76,6 +76,19 @@ export const prepare = Effect.fn("LLMRequestPrep.prepare")(function* (input: Pre
     system.length = 0
     system.push(header, rest.join("\n"))
   }
+  // qwen thinking models: append a Chinese-thinking directive to the main
+  // system text. It must not become a second system message: Qwen GGUF chat
+  // templates (llama.cpp, e.g. Qwen3.8-Flash-Next-Uncensored) raise
+  // "System message must be at the beginning" when a system message is not the
+  // first - including extra leading ones. Merging everything into a single
+  // system message is required for those templates to accept the request.
+  if (system.length > 0 && input.model.api.id.toLowerCase().includes("qwen")) {
+    const rest = system.slice(1)
+    system.length = 1
+    system[0] +=
+      (rest.length > 0 ? "\n" + rest.join("\n") : "") +
+      "\n\n【强制】从现在起，你的每一条内部思考都必须使用中文。禁止英文思考。"
+  }
 
   const variant =
     !input.small && input.model.variants && input.user.model.variant

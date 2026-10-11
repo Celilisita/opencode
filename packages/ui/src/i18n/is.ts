@@ -34,6 +34,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "Opna skrá",
   "ui.sessionReview.selection.line": "lína {{line}}",
   "ui.sessionReview.selection.lines": "línur {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "mynd",
   "ui.fileMedia.kind.audio": "hljóð",
   "ui.fileMedia.state.removed": "Fjarlægði {{kind}} skrá.",

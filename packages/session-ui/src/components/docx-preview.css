@@ -1,0 +1,37 @@
+[data-component="docx-preview"] {
+  width: 100%;
+}
+
+.docx-pdf-frame {
+  min-height: 240px;
+}
+
+.docx-preview-content {
+  max-width: 820px;
+  margin: 16px auto 40px;
+  padding: 24px 32px;
+  border: 1px solid var(--border-base, rgba(128, 128, 128, 0.2));
+  border-radius: var(--radius-md, 6px);
+  background: var(--background-base, transparent);
+  color: var(--text-strong, inherit);
+  font-family: var(--font-family-sans, inherit);
+  font-size: var(--font-size-base, 14px);
+  line-height: var(--line-height-large, 1.6);
+  word-break: break-word;
+}
+
+.docx-preview-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.docx-preview-content table {
+  border-collapse: collapse;
+  max-width: 100%;
+}
+
+.docx-preview-content th,
+.docx-preview-content td {
+  border: 1px solid var(--border-base, rgba(128, 128, 128, 0.2));
+  padding: 4px 8px;
+}

@@ -457,6 +457,7 @@ export interface Interface {
     partID: PartID
   }) => Effect.Effect<SessionV1.Part | undefined>
   readonly updatePart: <T extends SessionV1.Part>(part: T) => Effect.Effect<T>
+  readonly updatePartProgress: <T extends SessionV1.Part>(part: T) => Effect.Effect<T>
   readonly updatePartDelta: (input: {
     sessionID: SessionID
     messageID: MessageID
@@ -884,6 +885,19 @@ const layer: Layer.Layer<
       yield* events.publish(MessageV2.Event.PartDelta, input)
     })
 
+    const updatePartProgress = <T extends SessionV1.Part>(part: T): Effect.Effect<T> =>
+      Effect.gen(function* () {
+        // Persist via the PartUpdated projector first so the update reaches the
+        // store; the PartProgress event is an extra stream for progress UIs.
+        yield* updatePart(part)
+        yield* events.publish(MessageV2.Event.PartProgress, {
+          sessionID: part.sessionID,
+          part: structuredClone(part),
+          time: Date.now(),
+        })
+        return part
+      }).pipe(Effect.withSpan("Session.updatePartProgress"))
+
     /** Finds the first message matching the predicate, searching newest-first. */
     const findMessage: Interface["findMessage"] = Effect.fn("Session.findMessage")(function* (sessionID, predicate) {
       const size = 50
@@ -930,6 +944,7 @@ const layer: Layer.Layer<
       updatePart,
       getPart,
       updatePartDelta,
+      updatePartProgress,
       findMessage,
     })
   }),

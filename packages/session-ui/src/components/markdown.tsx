@@ -32,6 +32,7 @@ import { markdownBlockKey, type MarkdownToken } from "./markdown-worker-protocol
 import { shouldResetCodeTokens, type RenderedCodeState } from "./markdown-code-state"
 import { getCachedMarkdown, sanitizeMarkdown, touchCachedMarkdown, type MarkdownCacheEntry } from "./markdown-cache"
 import { inlineCodeKind } from "./markdown-inline-code-kind"
+import type { MarkdownImageResolver } from "../context/data"
 
 type RenderedBlock =
   | (MarkdownCacheEntry & { key: string; mode: Exclude<Block["mode"], "code"> })
@@ -53,6 +54,7 @@ type RenderResult = {
 }
 
 const renderedCodeTokens = new WeakMap<HTMLDivElement, RenderedCodeState>()
+const resolvedImageSources = new WeakMap<HTMLImageElement, string>()
 
 function escape(text: string) {
   return text
@@ -275,14 +277,47 @@ function markInlineCode(root: HTMLDivElement) {
   }
 }
 
+function markPathLinks(root: HTMLDivElement, enabled: boolean) {
+  const codeNodes = Array.from(root.querySelectorAll<HTMLElement>('code[data-inline-code-kind="path"]'))
+  for (const code of codeNodes) {
+    if (!enabled) {
+      delete code.dataset.markdownPath
+      code.removeAttribute("role")
+      code.removeAttribute("tabindex")
+      continue
+    }
+    code.dataset.markdownPath = ""
+    code.setAttribute("role", "link")
+    code.tabIndex = 0
+  }
+}
+
 function decorate(root: HTMLDivElement, labels: CopyLabels) {
   const blocks = Array.from(root.querySelectorAll("pre"))
   for (const block of blocks) {
     ensureCodeWrapper(block, labels)
   }
-  if (!document.body.hasAttribute("data-new-layout")) return
   markInlineCode(root)
+  if (!document.body.hasAttribute("data-new-layout")) return
   markCodeLinks(root)
+}
+
+function resolveImages(root: HTMLDivElement, resolver: MarkdownImageResolver | undefined) {
+  if (!resolver) return
+  const images = Array.from(root.querySelectorAll("img"))
+  images.forEach((image) => {
+    const source = image.getAttribute("data-markdown-image-src") ?? image.getAttribute("src")
+    if (!source || resolvedImageSources.get(image) === source) return
+    resolvedImageSources.set(image, source)
+    void Promise.resolve(resolver(source))
+      .then((url) => {
+        if (!url || !image.isConnected) return
+        if (resolvedImageSources.get(image) !== source) return
+        image.src = url
+        image.dataset.markdownImageResolved = "true"
+      })
+      .catch(() => {})
+  })
 }
 
 function setupCodeCopy(root: HTMLDivElement, getLabels: () => CopyLabels) {
@@ -330,6 +365,46 @@ function setupCodeCopy(root: HTMLDivElement, getLabels: () => CopyLabels) {
   }
 }
 
+function setupPathOpen(root: HTMLDivElement, getOpenPath: () => ((path: string) => void) | undefined) {
+  const pathCode = (target: EventTarget | null): HTMLElement | undefined => {
+    if (!(target instanceof Element)) return
+    const code = target.closest("code[data-markdown-path]")
+    if (!(code instanceof HTMLElement) || !root.contains(code)) return
+    return code
+  }
+
+  const open = (code: HTMLElement) => {
+    const path = code.textContent?.trim()
+    if (!path) return
+    getOpenPath()?.(path)
+  }
+
+  const handleClick = (event: MouseEvent) => {
+    if (event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+    const code = pathCode(event.target)
+    if (!code) return
+    event.preventDefault()
+    event.stopPropagation()
+    open(code)
+  }
+
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== "Enter") return
+    const code = pathCode(event.target)
+    if (!code) return
+    event.preventDefault()
+    event.stopPropagation()
+    open(code)
+  }
+
+  root.addEventListener("click", handleClick)
+  root.addEventListener("keydown", handleKeyDown)
+  return () => {
+    root.removeEventListener("click", handleClick)
+    root.removeEventListener("keydown", handleKeyDown)
+  }
+}
+
 function initialResult(text: string, key: string | undefined, projection: Projection, owner: string): RenderResult {
   if (!text) return { text, blocks: [] }
   const base = key ?? checksum(text)
@@ -366,11 +441,21 @@ export function Markdown(
     text: string
     cacheKey?: string
     streaming?: boolean
+    resolveImage?: MarkdownImageResolver
+    onOpenPath?: (path: string) => void
     class?: string
     classList?: Record<string, boolean>
   },
 ) {
-  const [local, others] = splitProps(props, ["text", "cacheKey", "streaming", "class", "classList"])
+  const [local, others] = splitProps(props, [
+    "text",
+    "cacheKey",
+    "streaming",
+    "resolveImage",
+    "onOpenPath",
+    "class",
+    "classList",
+  ])
   const i18n = useI18n()
   const [root, setRoot] = createSignal<HTMLDivElement>()
   const owner = createUniqueId()
@@ -491,6 +576,7 @@ export function Markdown(
   )
 
   let copyCleanup: (() => void) | undefined
+  let pathCleanup: (() => void) | undefined
 
   createEffect(() => {
     const container = root()
@@ -516,6 +602,8 @@ export function Markdown(
     activeCodeKeys.clear()
     nextCodeKeys.forEach((key) => activeCodeKeys.add(key))
     content.forEach((block, index) => updateBlock(container, index, block, labels))
+    markPathLinks(container, !!local.onOpenPath)
+    resolveImages(container, local.resolveImage)
     while (container.children.length > content.length) {
       const child = container.lastElementChild
       if (!child) break
@@ -530,10 +618,12 @@ export function Markdown(
         copy: i18n.t("ui.message.copy"),
         copied: i18n.t("ui.message.copied"),
       }))
+    if (!pathCleanup) pathCleanup = setupPathOpen(container, () => local.onOpenPath)
   })
 
   onCleanup(() => {
     if (copyCleanup) copyCleanup()
+    if (pathCleanup) pathCleanup()
     disposeMarkdownProjection(owner)
     activeCodeKeys.forEach(disposeCode)
     completedCode.clear()

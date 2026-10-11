@@ -59,6 +59,9 @@ type PlatformBase = {
   /** Resolve the native source path for a desktop File. */
   getPathForFile?(file: File): string
 
+  /** Read a local image as a browser-safe data URL (desktop only). */
+  readLocalImage?(path: string): Promise<string | undefined>
+
   /** Open a native save file picker dialog (desktop only) */
   saveFilePickerDialog?(opts?: SaveFilePickerOptions): Promise<string | null>
 

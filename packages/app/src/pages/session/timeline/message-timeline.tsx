@@ -255,6 +255,7 @@ export function MessageTimeline(props: {
   setRevealMessage?: (fn: (id: string) => void) => void
   setScrollToEnd?: (fn: () => void) => void
   setHistoryAnchor?: (handlers: { capture: () => void; restore: (done: boolean) => void }) => void
+  onOpenPath?: (path: string) => void
 }) {
   let touchGesture: number | undefined
 
@@ -1032,6 +1033,7 @@ export function MessageTimeline(props: {
                 deferToolContent
                 virtualizeDiff={false}
                 onContentRendered={onSizeChange}
+                onOpenPath={props.onOpenPath}
               />
             )}
           </Show>

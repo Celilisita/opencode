@@ -24,7 +24,7 @@ import {
   Show,
   on,
 } from "solid-js"
-import { TuiPathsProvider, TuiStartupProvider, TuiTerminalEnvironmentProvider, useTuiStartup } from "./context/runtime"
+import { TuiPathsProvider, TuiStartupProvider, TuiTerminalEnvironmentProvider, useTuiPaths, useTuiStartup } from "./context/runtime"
 import { DialogProvider, useDialog } from "./ui/dialog"
 import { DialogProvider as DialogProviderList } from "./component/dialog-provider"
 import { ErrorComponent } from "./component/error-component"
@@ -85,6 +85,7 @@ import * as TuiAudio from "./audio"
 import { win32DisableProcessedInput, win32FlushInputBuffer } from "./terminal-win32"
 import { destroyRenderer } from "./util/renderer"
 import { cliErrorMessage, errorFormat } from "./util/error"
+import { confirmExit } from "./util/exit-confirmation"
 
 registerOpencodeSpinner()
 
@@ -367,6 +368,7 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
   const sync = useSync()
   const project = useProject()
   const exit = useExit()
+  const paths = useTuiPaths()
   const promptRef = usePromptRef()
   const pluginRuntime = usePluginRuntime()
   const attention = createTuiAttention({ renderer, config: tuiConfig, kv })
@@ -828,7 +830,12 @@ function App(props: { onSnapshot?: () => Promise<string[]>; pluginHost: TuiPlugi
         title: "Exit the app",
         slashName: "exit",
         slashAliases: ["quit", "q"],
-        run: () => exit(),
+        run: () => {
+          void confirmExit(dialog, tuiConfig.exit_confirmation ?? "none", paths.state, paths.cwd).then((go) => {
+            if (go) exit()
+            else dialog.clear()
+          })
+        },
         category: "System",
       },
       {

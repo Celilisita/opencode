@@ -35,6 +35,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.selection.line": "baris {{line}}",
   "ui.sessionReview.selection.lines": "baris {{start}}-{{end}}",
 
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "gambar",
   "ui.fileMedia.kind.audio": "audio",
   "ui.fileMedia.state.removed": "Berkas {{kind}} dihapus.",

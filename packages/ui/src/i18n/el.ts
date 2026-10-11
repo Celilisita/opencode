@@ -34,6 +34,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "Άνοιγμα αρχείου",
   "ui.sessionReview.selection.line": "γραμμή {{line}}",
   "ui.sessionReview.selection.lines": "γραμμές {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "εικόνα",
   "ui.fileMedia.kind.audio": "ήχος",
   "ui.fileMedia.state.removed": "Καταργήθηκε {{kind}} αρχείο.",

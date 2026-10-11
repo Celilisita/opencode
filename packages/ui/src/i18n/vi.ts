@@ -34,6 +34,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "Mở tệp",
   "ui.sessionReview.selection.line": "dòng {{line}}",
   "ui.sessionReview.selection.lines": "dòng {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "hình ảnh",
   "ui.fileMedia.kind.audio": "âm thanh",
   "ui.fileMedia.state.removed": "Đã xóa tệp {{kind}}.",

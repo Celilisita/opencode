@@ -34,6 +34,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "ክፍት ፋይል",
   "ui.sessionReview.selection.line": "መስመር {{line}}",
   "ui.sessionReview.selection.lines": "መስመሮች {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "ምስል",
   "ui.fileMedia.kind.audio": "ድምጽ",
   "ui.fileMedia.state.removed": "{{kind}}ፋይል ተወግዷል።",

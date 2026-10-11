@@ -36,6 +36,7 @@ export type SessionReviewFilePreviewV2Props = {
   diffStyle: SessionReviewDiffStyle
   expandMode?: SessionReviewExpandMode
   readFile?: (path: string) => Promise<FileContent | undefined>
+  openWithSystem?: (path: string) => void | Promise<void>
   onLineComment?: (comment: SessionReviewLineComment) => void
   onLineCommentUpdate?: (comment: SessionReviewCommentUpdate) => void
   onLineCommentDelete?: (comment: SessionReviewCommentDelete) => void
@@ -246,7 +247,8 @@ export function SessionReviewFilePreviewV2(props: SessionReviewFilePreviewV2Prop
         mode: "auto",
         path: props.file,
         deleted: view().status === "deleted",
-        readFile: view().status === "deleted" ? undefined : props.readFile,
+          readFile: view().status === "deleted" ? undefined : props.readFile,
+          openWithSystem: props.openWithSystem,
       }}
     />
   )

@@ -34,6 +34,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "გახსენით ფაილი",
   "ui.sessionReview.selection.line": "სტრიქონი {{line}}",
   "ui.sessionReview.selection.lines": "ხაზები {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "სურათი",
   "ui.fileMedia.kind.audio": "აუდიო",
   "ui.fileMedia.state.removed": "ამოღებულია {{kind}} ფაილი.",

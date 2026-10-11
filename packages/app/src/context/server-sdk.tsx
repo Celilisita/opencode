@@ -58,9 +58,9 @@ export function adaptServerEvent(event: OpenCodeEvent): ServerEvent {
 
 const coalescedKey = (event: QueuedServerEvent) => {
   if (event.payload.type === "lsp.updated") return `lsp.updated:${event.directory}`
-  if (event.payload.type === "message.part.updated") {
-    const part = event.payload.properties.part
-    return `message.part.updated:${event.directory}:${part.messageID}:${part.id}`
+  if (event.payload.type === "message.part.updated" || event.payload.type === "message.part.progress") {
+    const part = (event.payload.properties as { part: { messageID: string; id: string } }).part
+    return `${event.payload.type}:${event.directory}:${part.messageID}:${part.id}`
   }
   return undefined
 }
@@ -179,6 +179,7 @@ type ServerSDKBase = {
     listen: ServerEventEmitter["listen"]
     start: () => Promise<void> | undefined
   }
+  firstDelta: Map<string, number>
   createClient: (
     opts: Omit<Parameters<typeof createSdkForServer>[0], "server" | "fetch">,
   ) => ReturnType<typeof createSdkForServer>
@@ -219,6 +220,7 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
   const STREAM_YIELD_MS = 8
   const RECONNECT_DELAY_MS = 250
 
+  const firstDelta = new Map<string, number>()
   let queue: Queued[] = []
   let buffer: Queued[] = []
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -237,6 +239,24 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
 
     last = Date.now()
     const output = coalesceServerEvents(events)
+    for (const event of output) {
+      const payload = event.payload
+      if (payload.type === "message.part.delta") {
+        const messageID = (payload.properties as { messageID?: string }).messageID
+        if (messageID && !firstDelta.has(messageID)) firstDelta.set(messageID, Date.now())
+        continue
+      }
+      if (payload.type === "message.removed") {
+        const messageID = (payload.properties as { messageID?: string }).messageID
+        if (messageID) firstDelta.delete(messageID)
+        continue
+      }
+      const current = currentDelta(payload.current)
+      if (current && current.type !== "session.compaction.delta") {
+        const messageID = (current.data as { assistantMessageID?: string }).assistantMessageID
+        if (messageID && !firstDelta.has(messageID)) firstDelta.set(messageID, Date.now())
+      }
+    }
     batch(() => {
       output.forEach((event) => emitter.emit(event.directory, event.payload))
     })
@@ -362,6 +382,7 @@ function createServerSdkContextBase(server: ServerConnection.Any, scope: ServerS
       listen: emitter.listen.bind(emitter),
       start,
     },
+    firstDelta,
     createClient(opts: Omit<Parameters<typeof createSdkForServer>[0], "server" | "fetch">) {
       return createSdkForServer({
         server: server.http,

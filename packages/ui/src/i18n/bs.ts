@@ -38,6 +38,7 @@ export const dict = {
   "ui.sessionReviewV2.empty.noGit.actionLoading": "Kreiranje Git repozitorija...",
   "ui.sessionReviewV2.empty.changes.title": "Još nema izmjena u datotekama",
   "ui.sessionReviewV2.empty.changes.description": "Promjene projekta će se prikazati ovdje",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "slika",
   "ui.fileMedia.kind.audio": "audio",
   "ui.fileMedia.state.removed": "Uklonjena datoteka vrste {{kind}}.",

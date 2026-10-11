@@ -16,6 +16,7 @@ describe("legacy public event schemas", () => {
       "message.part.updated",
       "message.part.removed",
       "message.part.delta",
+      "message.part.progress",
       "session.diff",
       "session.error",
     ])
@@ -28,6 +29,7 @@ describe("legacy public event schemas", () => {
   test("owns the legacy transient public definitions", () => {
     expect([
       SessionV1.PartDelta.type,
+      SessionV1.PartProgress.type,
       SessionV1.Diff.type,
       SessionV1.Error.type,
       PermissionV1.Event.Asked.type,
@@ -39,6 +41,7 @@ describe("legacy public event schemas", () => {
       LegacyEvent.CommandExecuted.type,
     ]).toEqual([
       "message.part.delta",
+      "message.part.progress",
       "session.diff",
       "session.error",
       "permission.asked",

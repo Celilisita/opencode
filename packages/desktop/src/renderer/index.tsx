@@ -201,6 +201,12 @@ const createPlatform = (windowState: DesktopWindowState): Platform => {
       return attachmentPaths.get(file) ?? window.api.getPathForFile(file)
     },
 
+    async readLocalImage(path) {
+      const image = await window.api.readLocalImage(path).catch(() => null)
+      if (!image) return undefined
+      return `data:${image.mimeType};base64,${image.content}`
+    },
+
     async saveFilePickerDialog(opts) {
       return window.api.saveFilePicker({
         title: opts?.title,

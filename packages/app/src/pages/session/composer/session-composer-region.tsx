@@ -11,6 +11,7 @@ import type { SessionComposerRegionController } from "./session-composer-region-
 export function SessionComposerRegion(props: {
   controller: SessionComposerRegionController
   promptInput: JSX.Element
+  stats?: JSX.Element
 }) {
   const language = useLanguage()
   const controller = props.controller
@@ -131,6 +132,7 @@ export function SessionComposerRegion(props: {
                 "margin-top": `${-controller.lift()}px`,
               }}
             >
+              <Show when={props.stats}>{props.stats}</Show>
               <Show when={controller.followup()?.items.length}>
                 <SessionFollowupDock
                   items={controller.followup()!.items}

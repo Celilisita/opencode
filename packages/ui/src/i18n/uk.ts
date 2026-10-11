@@ -36,6 +36,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.selection.line": "рядок {{line}}",
   "ui.sessionReview.selection.lines": "рядки {{start}}-{{end}}",
 
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "зображення",
   "ui.fileMedia.kind.audio": "аудіо",
   "ui.fileMedia.state.removed": "{{kind}} видалено",

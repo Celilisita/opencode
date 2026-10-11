@@ -1,6 +1,7 @@
 import type { FileContent } from "@opencode-ai/sdk/v2"
 
 export type MediaKind = "image" | "audio" | "svg"
+export type PreviewKind = "pdf" | "docx"
 
 const imageExtensions = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "ico", "tif", "tiff", "heic"])
 const audioExtensions = new Set(["mp3", "wav", "ogg", "m4a", "aac", "flac", "opus"])
@@ -38,6 +39,12 @@ export function mediaKindFromPath(path: string | undefined): MediaKind | undefin
   if (ext === "svg") return "svg"
   if (imageExtensions.has(ext)) return "image"
   if (audioExtensions.has(ext)) return "audio"
+}
+
+export function previewKindFromPath(path: string | undefined): PreviewKind | undefined {
+  const ext = fileExtension(path)
+  if (ext === "pdf") return "pdf"
+  if (ext === "docx") return "docx"
 }
 
 export function isBinaryContent(value: MediaValue) {

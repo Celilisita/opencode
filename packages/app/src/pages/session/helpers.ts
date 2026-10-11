@@ -24,6 +24,23 @@ type TabsInput = {
 
 export const getSessionKey = (dir: string | undefined, id: string | undefined) => `${dir ?? ""}${id ? `/${id}` : ""}`
 
+export function isAbsolutePath(path: string) {
+  return path.startsWith("/") || path.startsWith("\\") || /^[A-Za-z]:[\\/]/.test(path)
+}
+
+export function isAbsolutePathOutsideDirectory(path: string, directory: string) {
+  if (!isAbsolutePath(path)) return false
+
+  const windows = directory.startsWith("\\\\") || /^[A-Za-z]:[\\/]/.test(directory)
+  const canonical = (value: string) => {
+    const normalized = value.replace(/\\/g, "/").replace(/\/+$/, "")
+    return windows ? normalized.toLowerCase() : normalized
+  }
+  const root = canonical(directory)
+  const target = canonical(path)
+  return target !== root && !target.startsWith(`${root}/`)
+}
+
 export function shouldShowFileTree(input: { visible: boolean; opened: boolean }) {
   return input.opened && input.visible
 }

@@ -19,6 +19,7 @@ export const dict: Record<Keys, string> = {
   "ui.sessionReview.largeDiff.title": "Diffen er for stor til å gjengi",
   "ui.sessionReview.largeDiff.meta": "Grense: {{limit}} endrede linjer. Nåværende: {{current}} endrede linjer.",
   "ui.sessionReview.largeDiff.renderAnyway": "Gjengi likevel",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "bilde",
   "ui.fileMedia.kind.audio": "lyd",
   "ui.fileMedia.state.removed": "Fjernet: {{kind}}",

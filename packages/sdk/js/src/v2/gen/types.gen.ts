@@ -49,6 +49,7 @@ export type Event =
   | EventSessionNextRevertCleared
   | EventSessionNextRevertCommitted
   | EventMessagePartDelta
+  | EventMessagePartProgress
   | EventSessionDiff
   | EventSessionError
   | EventInstallationUpdated
@@ -1199,6 +1200,15 @@ export type GlobalEvent = {
           partID: string
           field: string
           delta: string
+        }
+      }
+    | {
+        id: string
+        type: "message.part.progress"
+        properties: {
+          sessionID: string
+          part: Part
+          time: number
         }
       }
     | {
@@ -2900,6 +2910,7 @@ export type V2Event =
   | SessionNextRevertCleared
   | SessionNextRevertCommitted
   | MessagePartDelta
+  | MessagePartProgress
   | SessionDiff
   | SessionError
   | InstallationUpdated
@@ -5324,6 +5335,25 @@ export type MessagePartDelta = {
   }
 }
 
+export type MessagePartProgress = {
+  id: string
+  metadata?: {
+    [key: string]: unknown
+  }
+  type: "message.part.progress"
+  durable?: {
+    aggregateID: string
+    seq: number
+    version: number
+  }
+  location?: LocationRef
+  data: {
+    sessionID: string
+    part: Part
+    time: number
+  }
+}
+
 export type SessionDiff = {
   id: string
   metadata?: {
@@ -6664,6 +6694,16 @@ export type EventMessagePartDelta = {
     partID: string
     field: string
     delta: string
+  }
+}
+
+export type EventMessagePartProgress = {
+  id: string
+  type: "message.part.progress"
+  properties: {
+    sessionID: string
+    part: Part
+    time: number
   }
 }
 

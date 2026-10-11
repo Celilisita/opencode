@@ -15,7 +15,7 @@ const DESCRIPTION = "Run a confined orchestration script with access to connecte
 
 export const Parameters = Schema.Struct({
   code: Schema.String.annotate({
-    description: "Script body executed by the confined interpreter.",
+    description: "由受限解释器执行的脚本主体。",
   }),
 })
 

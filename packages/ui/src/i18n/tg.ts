@@ -34,6 +34,7 @@ export const dict = {
   "ui.sessionReview.openFile": "Файлро кушоед",
   "ui.sessionReview.selection.line": "сатри {{line}}",
   "ui.sessionReview.selection.lines": "сатрҳо {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "тасвир",
   "ui.fileMedia.kind.audio": "аудио",
   "ui.fileMedia.state.removed": "Файли {{kind}} хориҷ карда шуд.",

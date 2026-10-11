@@ -34,6 +34,7 @@ export const dict: Record<string, string> = {
   "ui.sessionReview.openFile": "Avaa tiedosto",
   "ui.sessionReview.selection.line": "rivi {{line}}",
   "ui.sessionReview.selection.lines": "rivit {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "Kuva",
   "ui.fileMedia.kind.audio": "Ääni",
   "ui.fileMedia.state.removed": "{{kind}}: tiedosto poistettu.",

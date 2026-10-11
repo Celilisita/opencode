@@ -259,6 +259,16 @@
     );
   }
 
+  :not(pre) > code[data-markdown-path] {
+    cursor: pointer;
+  }
+
+  :not(pre) > code[data-markdown-path]:hover,
+  :not(pre) > code[data-markdown-path]:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
   a.external-link > code[data-inline-code-kind="url"] {
     color: var(--markdown-inline-code-color);
     background: none;
@@ -295,7 +305,9 @@
   /* Images */
   img {
     max-width: 100%;
+    max-height: min(70vh, 720px);
     height: auto;
+    object-fit: contain;
     border-radius: 4px;
     margin: 1.5rem 0;
     display: block;

@@ -27,6 +27,7 @@ const SESSION_CONTENT_EVENTS = new Set([
   "message.part.updated",
   "message.part.removed",
   "message.part.delta",
+  "message.part.progress",
   "permission.asked",
   "permission.replied",
   "question.asked",
@@ -310,7 +311,8 @@ export function applyDirectoryEvent(input: {
       )
       break
     }
-    case "message.part.updated": {
+    case "message.part.updated":
+    case "message.part.progress": {
       const part = (event.properties as { part: Part }).part
       if (SKIP_PARTS.has(part.type)) break
       input.setStore(

@@ -2424,10 +2424,6 @@ function UpdateAvailableToast(props: {
       description: props.language.t("toast.update.description", { version: props.version }),
       actions: [
         {
-          label: props.language.t("toast.update.action.installRestart"),
-          onClick: props.install,
-        },
-        {
           label: props.language.t("toast.update.action.notYet"),
           onClick: "dismiss",
         },

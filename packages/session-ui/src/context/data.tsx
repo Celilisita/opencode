@@ -46,6 +46,8 @@ export type NavigateToSessionFn = (sessionID: string) => void
 
 export type SessionHrefFn = (sessionID: string) => string
 
+export type MarkdownImageResolver = (source: string) => Promise<string | undefined> | string | undefined
+
 export const { use: useData, provider: DataProvider } = createSimpleContext({
   name: "Data",
   init: (props: {
@@ -54,6 +56,7 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
     sessionID?: string
     onNavigateToSession?: NavigateToSessionFn
     onSessionHref?: SessionHrefFn
+    resolveMarkdownImage?: MarkdownImageResolver
   }) => {
     return {
       get store() {
@@ -65,6 +68,7 @@ export const { use: useData, provider: DataProvider } = createSimpleContext({
       get sessionID() {
         return props.sessionID
       },
+      resolveMarkdownImage: props.resolveMarkdownImage,
       navigateToSession: props.onNavigateToSession,
       sessionHref: props.onSessionHref,
     }

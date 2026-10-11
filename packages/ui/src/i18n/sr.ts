@@ -35,6 +35,7 @@ export const dict = {
   "ui.sessionReview.openFile": "Отворите датотеку",
   "ui.sessionReview.selection.line": "ред {{line}}",
   "ui.sessionReview.selection.lines": "линије {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "слика",
   "ui.fileMedia.kind.audio": "аудио",
   "ui.fileMedia.state.removed": "Уклоњена датотека {{kind}}.",

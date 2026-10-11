@@ -1064,7 +1064,8 @@ describe("tool.shell abort", () => {
         projectRoot,
         Effect.gen(function* () {
           const tool = yield* initShell()
-          expect(tool.description).toContain("commands will time out after 500ms")
+          // 500ms 为语言中性断言：描述随本地化变化（中文版含 "500ms 后超时"，英文版含 "after 500ms"）
+          expect(tool.description).toContain("500ms")
           const result = yield* tool.execute(
             {
               command: `sleep 60`,
@@ -1110,9 +1111,10 @@ describe("tool.shell abort", () => {
       projectRoot,
       Effect.gen(function* () {
         const updates: string[] = []
+        // 用 `;` 而非 `&&`：Windows 默认 shell 为 PowerShell 5.1（不支持 &&），bash 亦兼容 `;`
         const result = yield* run(
           {
-            command: `echo first && sleep 0.1 && echo second`,
+            command: `echo first; sleep 0.1; echo second`,
           },
           {
             ...ctx,

@@ -42,13 +42,13 @@ const BACKGROUND_UPDATED = [
 
 const BaseParameterFields = {
   description: Schema.String.annotate({ description: "A short (3-5 words) description of the task" }),
-  prompt: Schema.String.annotate({ description: "The task for the agent to perform" }),
-  subagent_type: Schema.String.annotate({ description: "The type of specialized agent to use for this task" }),
+  prompt: Schema.String.annotate({ description: "要 agent 执行的任务" }),
+  subagent_type: Schema.String.annotate({ description: "本任务要使用的专用 agent 类型" }),
   task_id: Schema.optional(Schema.String).annotate({
     description:
       "This should only be set if you mean to resume a previous task (you can pass a prior task_id and the task will continue the same subagent session as before instead of creating a fresh one)",
   }),
-  command: Schema.optional(Schema.String).annotate({ description: "The command that triggered this task" }),
+  command: Schema.optional(Schema.String).annotate({ description: "触发该任务的命令" }),
 }
 
 const BaseParameters = Schema.Struct(BaseParameterFields)

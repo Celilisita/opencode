@@ -16,6 +16,7 @@ export const dict = {
   "ui.sessionReview.largeDiff.title": "차이가 너무 커서 렌더링할 수 없습니다",
   "ui.sessionReview.largeDiff.meta": "제한: 변경된 줄 {{limit}}개. 현재: 변경된 줄 {{current}}개.",
   "ui.sessionReview.largeDiff.renderAnyway": "그래도 렌더링",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "이미지",
   "ui.fileMedia.kind.audio": "오디오",
   "ui.fileMedia.state.removed": "{{kind}} 제거됨",

@@ -1,19 +1,19 @@
-Launch a new agent to handle complex, multistep tasks autonomously.
+启动一个新 agent 自主处理复杂的多步骤任务。
 
-When using the Task tool, you must specify a subagent_type parameter to select which agent type to use.
+使用 Task 工具时，必须指定 subagent_type 参数来选择要使用的 agent 类型。
 
-When NOT to use the Task tool:
-- If you want to read a specific file path, use the Read or Glob tool instead of the Task tool, to find the match more quickly
-- If you are searching for a specific class definition like "class Foo", use the Grep tool instead, to find the match more quickly
-- If you are searching for code within a specific file or set of 2-3 files, use the Read tool instead of the Task tool, to find the match more quickly
-- If no available agent is a good fit for the task, use other tools directly
+不要使用 Task 工具的情况：
+- 想读取特定文件路径时，改用 Read 或 Glob 工具，查找更快
+- 在查找特定类定义（如 "class Foo"）时，改用 Grep 工具，查找更快
+- 在特定文件或 2-3 个文件集合内搜索代码时，改用 Read 工具，查找更快
+- 没有合适的 agent 匹配该任务时，直接使用其他工具
 
 
-Usage notes:
-1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses
-2. Once you have delegated work to an agent, do not duplicate that work yourself. Continue with non-overlapping tasks, or wait for the result. For background tasks, you will be notified automatically when the result is ready.
-3. When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result. The output includes a task_id you can reuse later to continue the same subagent session.
-4. Each agent invocation starts with a fresh context unless you provide task_id to resume the same subagent session (which continues with its previous messages and tool outputs). When starting fresh, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
-5. The agent's outputs should generally be trusted
-6. Clearly tell the agent whether you expect it to write code or just to do research (search, file reads, web fetches, etc.), since it is not aware of the user's intent. Tell it how to verify its work if possible (e.g., relevant test commands).
-7. If the agent description mentions that it should be used proactively, then you should try your best to use it without the user having to ask for it first. Use your judgement.
+用法说明：
+1. 尽可能并发启动多个 agent 以最大化性能；做法是在一条消息中使用多个工具调用
+2. 一旦把工作委托给 agent，就不要再自己重复那部分工作。继续做不重叠的任务，或等待结果。对于后台任务，结果就绪时会自动通知。
+3. agent 完成时会返回一条消息给你。agent 返回的结果用户看不到。要向用户展示结果，应给用户发一条简明总结结果的文字消息。输出包含可复用的 task_id，用于继续同一个 subagent 会话。
+4. 每次 agent 调用都从全新上下文开始，除非提供 task_id 恢复同一个 subagent 会话（延续其之前的消息和工具输出）。全新开始时，你的提示词应包含高度详细的任务描述供 agent 自主执行，并精确说明 agent 应在其最终且唯一的回复中返回哪些信息。
+5. 通常应信任 agent 的输出
+6. 明确告诉 agent 你期望它写代码还是只做研究（搜索、读文件、网页抓取等），因为它不知道用户意图。尽量告诉它如何验证其工作（例如相关测试命令）。
+7. 如果 agent 描述中提到应主动使用它，则尽量主动使用，无需用户先开口。自行判断。

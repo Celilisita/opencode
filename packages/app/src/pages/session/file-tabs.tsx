@@ -23,6 +23,10 @@ import { useSettings } from "@/context/settings"
 import { getSessionHandoff } from "@/pages/session/handoff"
 import { useSessionLayout } from "@/pages/session/session-layout"
 import { createSessionTabs } from "@/pages/session/helpers"
+import { Markdown } from "@opencode-ai/session-ui/markdown"
+import { useData } from "@opencode-ai/session-ui/context"
+import { usePlatform } from "@/context/platform"
+import { useSDK } from "@/context/sdk"
 
 type SessionFileViewProps = {
   tab: string
@@ -229,6 +233,7 @@ function SessionFileViewV1(props: { tab: string }) {
   const language = useLanguage()
   const prompt = usePrompt()
   const fileComponent = useFileComponent()
+  const platform = usePlatform()
   const { sessionKey, tabs, view } = useSessionLayout()
   const activeFileTab = createSessionTabs({
     tabs,
@@ -252,6 +257,53 @@ function SessionFileViewV1(props: { tab: string }) {
   })
   const contents = createMemo(() => state()?.content?.content ?? "")
   const cacheKey = createMemo(() => sampledChecksum(contents()))
+  const data = useData()
+  const sdk = useSDK()
+  const platformOpenPath = platform.openPath
+  const openWithSystem = platformOpenPath
+    ? (p: string) => {
+        const d = sdk().directory
+        const abs = d && !/^[a-z]:[\\/]/i.test(p) && !p.startsWith("/") ? [d, p].join("/") : p
+        void platformOpenPath(abs).catch(() =>
+          showToast({ variant: "error", title: language.t("toast.file.loadFailed.title") }),
+        )
+      }
+    : undefined
+  const markdownDir = createMemo(() => {
+    const p = path()
+    if (!p) return ""
+    const i = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"))
+    return i > 0 ? p.slice(0, i) : ""
+  })
+  const resolveFileMarkdownImage = (source: string) => {
+    const fallback = data.resolveMarkdownImage
+    const value = source.trim()
+    if (!value || value.startsWith("//")) return fallback?.(source)
+    if (/^[a-z]{2,}[a-z0-9+.-]*:/i.test(value) && !value.toLowerCase().startsWith("file:"))
+      return fallback?.(source)
+    const read = platform.readLocalImage
+    const d = sdk().directory
+    if (!read || !d) return fallback?.(value)
+    const dir = markdownDir()
+    const base = dir ? [d, dir].join("/") : d
+    const local = value.startsWith("/") || /^[a-z]:[\\/]/i.test(value) ? value : [base, value].join("/")
+    return Promise.resolve(read(local)).then((url) => (url ? url : fallback?.(value) ?? undefined))
+  }
+  const markdownFile = createMemo(() => {
+    const p = path()
+    if (!p) return false
+    const ext = p.split(".").pop()?.toLowerCase()
+    return ext === "md" || ext === "mdx"
+  })
+  const [markdownView, setMarkdownView] = createSignal<"preview" | "source">("preview")
+  createEffect(
+    on(
+      path,
+      () => {
+        setMarkdownView("preview")
+      },
+    ),
+  )
   const selectedLines = createMemo<SelectedLineRange | null>(() => {
     const p = path()
     if (!p) return null
@@ -446,53 +498,95 @@ function SessionFileViewV1(props: { tab: string }) {
     scrollSync.queueRestore()
   })
 
+  const renderEditor = (source: string) => (
+    <Dynamic
+      component={fileComponent}
+      mode="text"
+      file={{
+        name: path() ?? "",
+        contents: source,
+        cacheKey: cacheKey(),
+      }}
+      enableLineSelection
+      enableGutterUtility
+      selectedLines={activeSelection()}
+      commentedLines={commentedLines()}
+      onRendered={() => {
+        scrollSync.queueRestore()
+      }}
+      annotations={commentsUi.annotations()}
+      renderAnnotation={commentsUi.renderAnnotation}
+      renderGutterUtility={commentsUi.renderGutterUtility}
+      onLineSelected={(range: SelectedLineRange) => {
+        commentsUi.onLineSelected(range)
+      }}
+      onLineSelectionEnd={(range: SelectedLineRange | null) => {
+        commentsUi.onLineSelectionEnd(range)
+      }}
+      search={search}
+      class="select-text"
+      media={{
+        mode: "auto",
+        path: path(),
+        current: state()?.content,
+        onLoad: scrollSync.queueRestore,
+        openWithSystem,
+        onError: (args: { kind: "image" | "audio" | "svg" | "pdf" | "docx" }) => {
+          if (args.kind !== "svg") return
+          showToast({
+            variant: "error",
+            title: language.t("toast.file.loadFailed.title"),
+          })
+        },
+      }}
+    />
+  )
+
   const renderFile = (source: string) => (
     <div class="relative overflow-hidden pb-40">
-      <Dynamic
-        component={fileComponent}
-        mode="text"
-        file={{
-          name: path() ?? "",
-          contents: source,
-          cacheKey: cacheKey(),
-        }}
-        enableLineSelection
-        enableGutterUtility
-        selectedLines={activeSelection()}
-        commentedLines={commentedLines()}
-        onRendered={() => {
-          scrollSync.queueRestore()
-        }}
-        annotations={commentsUi.annotations()}
-        renderAnnotation={commentsUi.renderAnnotation}
-        renderGutterUtility={commentsUi.renderGutterUtility}
-        onLineSelected={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelected(range)
-        }}
-        onLineSelectionEnd={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelectionEnd(range)
-        }}
-        search={search}
-        class="select-text"
-        media={{
-          mode: "auto",
-          path: path(),
-          current: state()?.content,
-          onLoad: scrollSync.queueRestore,
-          onError: (args: { kind: "image" | "audio" | "svg" }) => {
-            if (args.kind !== "svg") return
-            showToast({
-              variant: "error",
-              title: language.t("toast.file.loadFailed.title"),
-            })
-          },
-        }}
-      />
+      <Show
+        when={markdownFile() && markdownView() === "preview"}
+        fallback={renderEditor(source)}
+      >
+        <div class="px-6 py-4">
+          <Markdown
+            text={source}
+            cacheKey={cacheKey()}
+            resolveImage={resolveFileMarkdownImage}
+          />
+        </div>
+      </Show>
     </div>
   )
 
   const content = () => (
     <div class="mt-3 relative h-full min-h-0">
+      <Show when={markdownFile()}>
+        <div class="absolute right-4 top-9 z-10 flex items-center gap-1">
+          <button
+            type="button"
+            class="rounded-md border px-2 py-1 text-12-regular"
+            classList={{
+              "border-border-base bg-background-base text-text-strong": markdownView() === "preview",
+              "border-border-weak-base bg-background-base text-text-weak": markdownView() !== "preview",
+            }}
+            onClick={() => setMarkdownView("preview")}
+          >
+            {language.t("session.files.preview")}
+          </button>
+          <button
+            type="button"
+            class="rounded-md border px-2 py-1 text-12-regular"
+            classList={{
+              "border-border-base bg-background-base text-text-strong": markdownView() === "source",
+              "border-border-weak-base bg-background-base text-text-weak": markdownView() !== "source",
+            }}
+            onClick={() => setMarkdownView("source")}
+          >
+            {language.t("session.files.source")}
+          </button>
+        </div>
+      </Show>
       <ScrollView class="h-full" viewportRef={scrollSync.setViewport} onScroll={scrollSync.handleScroll as any}>
         <Switch>
           <Match when={state()?.loaded}>{renderFile(contents())}</Match>
@@ -514,6 +608,7 @@ function SessionFileViewV2(props: { tab: string }) {
   const language = useLanguage()
   const prompt = usePrompt()
   const fileComponent = useFileComponent()
+  const platform = usePlatform()
   const { sessionKey, tabs, view } = useSessionLayout()
   const activeFileTab = createSessionTabs({
     tabs,
@@ -537,6 +632,53 @@ function SessionFileViewV2(props: { tab: string }) {
   })
   const contents = createMemo(() => state()?.content?.content ?? "")
   const cacheKey = createMemo(() => sampledChecksum(contents()))
+  const data = useData()
+  const sdk = useSDK()
+  const platformOpenPath = platform.openPath
+  const openWithSystem = platformOpenPath
+    ? (p: string) => {
+        const d = sdk().directory
+        const abs = d && !/^[a-z]:[\\/]/i.test(p) && !p.startsWith("/") ? [d, p].join("/") : p
+        void platformOpenPath(abs).catch(() =>
+          showToast({ variant: "error", title: language.t("toast.file.loadFailed.title") }),
+        )
+      }
+    : undefined
+  const markdownDir = createMemo(() => {
+    const p = path()
+    if (!p) return ""
+    const i = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"))
+    return i > 0 ? p.slice(0, i) : ""
+  })
+  const resolveFileMarkdownImage = (source: string) => {
+    const fallback = data.resolveMarkdownImage
+    const value = source.trim()
+    if (!value || value.startsWith("//")) return fallback?.(source)
+    if (/^[a-z]{2,}[a-z0-9+.-]*:/i.test(value) && !value.toLowerCase().startsWith("file:"))
+      return fallback?.(source)
+    const read = platform.readLocalImage
+    const d = sdk().directory
+    if (!read || !d) return fallback?.(value)
+    const dir = markdownDir()
+    const base = dir ? [d, dir].join("/") : d
+    const local = value.startsWith("/") || /^[a-z]:[\\/]/i.test(value) ? value : [base, value].join("/")
+    return Promise.resolve(read(local)).then((url) => (url ? url : fallback?.(value) ?? undefined))
+  }
+  const markdownFile = createMemo(() => {
+    const p = path()
+    if (!p) return false
+    const ext = p.split(".").pop()?.toLowerCase()
+    return ext === "md" || ext === "mdx"
+  })
+  const [markdownView, setMarkdownView] = createSignal<"preview" | "source">("preview")
+  createEffect(
+    on(
+      path,
+      () => {
+        setMarkdownView("preview")
+      },
+    ),
+  )
   const selectedLines = createMemo<SelectedLineRange | null>(() => {
     const p = path()
     if (!p) return null
@@ -729,61 +871,103 @@ function SessionFileViewV2(props: { tab: string }) {
     scrollSync.queueRestore()
   })
 
+  const renderEditor = (source: string) => (
+    <Dynamic
+      component={fileComponent}
+      mode="text"
+      file={{
+        name: path() ?? "",
+        contents: source,
+        cacheKey: cacheKey(),
+      }}
+      enableLineSelection
+      enableGutterUtility
+      selectedLines={activeSelection()}
+      commentedLines={commentedLines()}
+      onRendered={() => {
+        scrollSync.queueRestore()
+      }}
+      annotations={commentsUi.annotations()}
+      renderAnnotation={commentsUi.renderAnnotation}
+      renderGutterUtility={commentsUi.renderGutterUtility}
+      onLineSelected={(range: SelectedLineRange) => {
+        commentsUi.onLineSelected(range)
+      }}
+      onLineSelectionEnd={(range: SelectedLineRange | null) => {
+        if (!range) {
+          commentsUi.note.select(null)
+          commentsUi.note.cancelDraft()
+          return
+        }
+        commentsUi.onLineSelectionEnd(range)
+      }}
+      onLineNumberSelectionEnd={(range: SelectedLineRange | null) => {
+        commentsUi.onLineNumberSelectionEnd(range)
+      }}
+      search={search}
+      class="select-text"
+      media={{
+        mode: "auto",
+        path: path(),
+        current: state()?.content,
+        onLoad: scrollSync.queueRestore,
+        openWithSystem,
+        onError: (args: { kind: "image" | "audio" | "svg" | "pdf" | "docx" }) => {
+          if (args.kind !== "svg") return
+          showToast({
+            variant: "error",
+            title: language.t("toast.file.loadFailed.title"),
+          })
+        },
+      }}
+    />
+  )
+
   const renderFile = (source: string) => (
     <div class="relative overflow-hidden pb-40">
-      <Dynamic
-        component={fileComponent}
-        mode="text"
-        file={{
-          name: path() ?? "",
-          contents: source,
-          cacheKey: cacheKey(),
-        }}
-        enableLineSelection
-        enableGutterUtility
-        selectedLines={activeSelection()}
-        commentedLines={commentedLines()}
-        onRendered={() => {
-          scrollSync.queueRestore()
-        }}
-        annotations={commentsUi.annotations()}
-        renderAnnotation={commentsUi.renderAnnotation}
-        renderGutterUtility={commentsUi.renderGutterUtility}
-        onLineSelected={(range: SelectedLineRange | null) => {
-          commentsUi.onLineSelected(range)
-        }}
-        onLineSelectionEnd={(range: SelectedLineRange | null) => {
-          if (!range) {
-            commentsUi.note.select(null)
-            commentsUi.note.cancelDraft()
-            return
-          }
-          commentsUi.onLineSelectionEnd(range)
-        }}
-        onLineNumberSelectionEnd={(range: SelectedLineRange | null) => {
-          commentsUi.onLineNumberSelectionEnd(range)
-        }}
-        search={search}
-        class="select-text"
-        media={{
-          mode: "auto",
-          path: path(),
-          current: state()?.content,
-          onLoad: scrollSync.queueRestore,
-          onError: (args: { kind: "image" | "audio" | "svg" }) => {
-            if (args.kind !== "svg") return
-            showToast({
-              variant: "error",
-              title: language.t("toast.file.loadFailed.title"),
-            })
-          },
-        }}
-      />
+      <Show
+        when={markdownFile() && markdownView() === "preview"}
+        fallback={renderEditor(source)}
+      >
+        <div class="px-6 py-4">
+          <Markdown
+            text={source}
+            cacheKey={cacheKey()}
+            resolveImage={resolveFileMarkdownImage}
+          />
+        </div>
+      </Show>
     </div>
   )
 
   const content = () => (
     <div class="mt-3 relative h-full min-h-0">
+      <Show when={markdownFile()}>
+        <div class="absolute right-4 top-9 z-10 flex items-center gap-1">
+          <button
+            type="button"
+            class="rounded-md border px-2 py-1 text-12-regular"
+            classList={{
+              "border-border-base bg-background-base text-text-strong": markdownView() === "preview",
+              "border-border-weak-base bg-background-base text-text-weak": markdownView() !== "preview",
+            }}
+            onClick={() => setMarkdownView("preview")}
+          >
+            {language.t("session.files.preview")}
+          </button>
+          <button
+            type="button"
+            class="rounded-md border px-2 py-1 text-12-regular"
+            classList={{
+              "border-border-base bg-background-base text-text-strong": markdownView() === "source",
+              "border-border-weak-base bg-background-base text-text-weak": markdownView() !== "source",
+            }}
+            onClick={() => setMarkdownView("source")}
+          >
+            {language.t("session.files.source")}
+          </button>
+        </div>
+      </Show>
       <ScrollView class="h-full" viewportRef={scrollSync.setViewport} onScroll={scrollSync.handleScroll as any}>
         <Switch>
           <Match when={state()?.loaded}>{renderFile(contents())}</Match>

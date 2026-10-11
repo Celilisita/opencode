@@ -35,6 +35,7 @@ export const dict = {
   "ui.sessionReview.openFile": "ဖိုင်ကိုဖွင့်ပါ။",
   "ui.sessionReview.selection.line": "လိုင်း {{line}}",
   "ui.sessionReview.selection.lines": "လိုင်းများ {{start}}-{{end}}",
+  "ui.fileMedia.openWithSystem": "Open with system app.",
   "ui.fileMedia.kind.image": "ပုံ",
   "ui.fileMedia.kind.audio": "အသံ",
   "ui.fileMedia.state.removed": "{{kind}} ဖိုင်ကို ဖယ်ရှားခဲ့သည်။",

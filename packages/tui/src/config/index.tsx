@@ -58,6 +58,12 @@ export const Prompt = Schema.Struct({
   }),
 }).annotate({ description: "Prompt size settings" })
 
+export const ExitConfirmation = Schema.Literals(["none", "confirm", "note"]).annotate({
+  description:
+    "Exit confirmation behavior: 'none' exits immediately, 'confirm' asks before exiting, 'note' asks for an optional exit note and records it",
+})
+export type ExitConfirmation = Schema.Schema.Type<typeof ExitConfirmation>
+
 export const Info = Schema.Struct({
   $schema: Schema.optional(Schema.String),
   theme: Schema.optional(Schema.String),
@@ -72,6 +78,7 @@ export const Info = Schema.Struct({
   diff_style: Schema.optional(DiffStyle),
   cursor: Schema.optional(Cursor),
   mouse: Schema.optional(Schema.Boolean).annotate({ description: "Enable or disable mouse capture (default: true)" }),
+  exit_confirmation: Schema.optional(ExitConfirmation),
 })
 export type Info = Schema.Schema.Type<typeof Info>
 
@@ -91,6 +98,7 @@ export type Resolved = Omit<Info, "attention" | "keybinds" | "leader_timeout" | 
     style: "block" | "underline" | "line" | "default"
     blinking: boolean
   }
+  exit_confirmation: ExitConfirmation
 }
 
 export const ResolveOptions = Schema.Struct({
@@ -126,6 +134,7 @@ export function resolve(input: Info, options: ResolveOptions): Resolved {
     }),
     leader_timeout: input.leader_timeout ?? LeaderTimeoutDefault,
     mouse: input.mouse ?? true,
+    exit_confirmation: input.exit_confirmation ?? "none",
     cursor: input.cursor
       ? {
           style: input.cursor.style ?? "block",

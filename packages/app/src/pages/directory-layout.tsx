@@ -12,6 +12,8 @@ import { Schema } from "effect"
 import type { ServerConnection } from "@/context/server"
 import { sessionHref } from "@/utils/session-route"
 import { useServerSync } from "@/context/server-sync"
+import { usePlatform } from "@/context/platform"
+import { createPathHelpers } from "@/context/file/path"
 
 export function DirectoryDataProvider(
   props: ParentProps<{
@@ -25,7 +27,26 @@ export function DirectoryDataProvider(
   const params = useParams()
   const sync = useSync()
   const serverSync = useServerSync()
+  const platform = usePlatform()
   const directory = () => (typeof props.directory === "function" ? props.directory() : props.directory)
+  const imagePaths = createPathHelpers(directory)
+  const imageCache = new Map<string, Promise<string | undefined>>()
+  const resolveMarkdownImage = (source: string) => {
+    if (platform.platform !== "desktop") return undefined
+    const value = source.trim()
+    if (!value || value.startsWith("//")) return undefined
+    if (/^[a-z]{2,}[a-z0-9+.-]*:/i.test(value) && !value.toLowerCase().startsWith("file:")) return undefined
+
+    const cached = imageCache.get(value)
+    if (cached) return cached
+
+    const absolute = value.startsWith("file:") || value.startsWith("/") || /^[a-z]:[\\/]/i.test(value)
+    const localSource = absolute ? value : [directory(), imagePaths.normalize(value)].join("/")
+    const result = platform.readLocalImage?.(localSource)
+    if (!result) return undefined
+    imageCache.set(value, result)
+    return result
+  }
   const slug = createMemo(() => base64Encode(directory()))
   const href = (sessionID: string) => {
     const server = props.server?.()
@@ -66,6 +87,7 @@ export function DirectoryDataProvider(
           sessionID={params.id}
           onNavigateToSession={(sessionID: string) => navigate(href(sessionID))}
           onSessionHref={href}
+          resolveMarkdownImage={resolveMarkdownImage}
         >
           <LocalProvider>{props.children}</LocalProvider>
         </DataProvider>

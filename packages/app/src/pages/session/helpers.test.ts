@@ -8,13 +8,39 @@ import {
   createSessionTabs,
   focusTerminalById,
   getTabReorderIndex,
+  isAbsolutePath,
+  isAbsolutePathOutsideDirectory,
   shouldShowFileTree,
 } from "./helpers"
+
+describe("isAbsolutePath", () => {
+  test("detects unix, windows drive, and UNC absolute paths", () => {
+    expect(isAbsolutePath("/Users/me/project/a.ts")).toBe(true)
+    expect(isAbsolutePath("C:/Users/me/a.ts")).toBe(true)
+    expect(isAbsolutePath("C:\\Users\\me\\a.ts")).toBe(true)
+    expect(isAbsolutePath("\\\\server\\share\\a.ts")).toBe(true)
+    expect(isAbsolutePath("src/a.ts")).toBe(false)
+    expect(isAbsolutePath("./a.ts")).toBe(false)
+  })
+})
 
 describe("shouldShowFileTree", () => {
   test("does not reserve space for a disabled file tree", () => {
     expect(shouldShowFileTree({ visible: false, opened: true })).toBe(false)
     expect(shouldShowFileTree({ visible: true, opened: true })).toBe(true)
+  })
+})
+
+describe("isAbsolutePathOutsideDirectory", () => {
+  test("distinguishes workspace files from sibling absolute paths", () => {
+    expect(isAbsolutePathOutsideDirectory("src/a.ts", "/Users/me/project")).toBe(false)
+    expect(isAbsolutePathOutsideDirectory("/Users/me/project/src/a.ts", "/Users/me/project")).toBe(false)
+    expect(isAbsolutePathOutsideDirectory("/Users/me/project-two/src/a.ts", "/Users/me/project")).toBe(true)
+  })
+
+  test("normalizes Windows separators and casing", () => {
+    expect(isAbsolutePathOutsideDirectory("c:\\Users\\me\\project\\src\\a.ts", "C:\\Users\\me\\project")).toBe(false)
+    expect(isAbsolutePathOutsideDirectory("D:\\src\\a.ts", "C:\\Users\\me\\project")).toBe(true)
   })
 })
 

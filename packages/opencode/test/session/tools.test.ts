@@ -132,8 +132,15 @@ it.effect("preserves running tool start time across metadata updates", () =>
           if (state.state.status === "running") updates.push(state.state.time.start)
           return state
         }),
+      progressToolCall: (_toolCallID, update) =>
+        Effect.sync(() => {
+          const next = update(state)
+          state.state = next.state
+          if (state.state.status === "running") updates.push(state.state.time.start)
+          return state
+        }),
       completeToolCall: () => Effect.void,
-    } satisfies Pick<SessionProcessor.Handle, "message" | "updateToolCall" | "completeToolCall">
+    } satisfies Pick<SessionProcessor.Handle, "message" | "updateToolCall" | "progressToolCall" | "completeToolCall">
 
     const tools = yield* SessionTools.resolve({
       agent,

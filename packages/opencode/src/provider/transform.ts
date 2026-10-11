@@ -1387,8 +1387,23 @@ export function options(input: {
   return result
 }
 
+const SMALL_EFFORT_RANK: Record<string, number> = { none: 0, minimal: 1, low: 2, medium: 3, high: 4, xhigh: 5, max: 6 }
+
 export function smallOptions(model: Provider.Model) {
-  const small = Object.values(model.variants ?? {})[0] ?? {}
+  const variants = model.variants ?? {}
+  const keys = Object.keys(variants)
+  // Small tasks (titles, project naming) should not pay for heavy reasoning:
+  // prefer an explicit "off" variant, then the lowest reasoning effort, and
+  // only fall back to the declared-first variant when nothing ranks cheaper.
+  const off = keys.find((k) => {
+    const lower = k.toLowerCase()
+    return lower === "none" || lower === "off" || lower.includes("disable")
+  })
+  const cheapest = keys
+    .filter((k) => typeof variants[k]?.reasoningEffort === "string")
+    .toSorted((a, b) => (SMALL_EFFORT_RANK[variants[a].reasoningEffort] ?? 99) - (SMALL_EFFORT_RANK[variants[b].reasoningEffort] ?? 99))[0]
+  const picked = off ?? cheapest
+  const small = picked !== undefined ? variants[picked] : (Object.values(variants)[0] ?? {})
   if (
     model.providerID === "openai" ||
     model.api.npm === "@ai-sdk/openai" ||
