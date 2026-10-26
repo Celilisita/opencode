@@ -294,6 +294,63 @@ const ask = Effect.fn("ShellTool.ask")(function* (ctx: Tool.Context, scan: Scan,
 // 而本工具按 UTF-8 解码输出；强制 UTF-8 避免中文输出变成不可恢复的乱码。
 const PS_UTF8_PREFIX = `[Console]::OutputEncoding = $OutputEncoding = [System.Text.Encoding]::UTF8; `
 
+// 原生程序（python、旧版工具等）不受上面的 PowerShell 前缀约束，仍常用系统代码页写
+// stdout（zh-CN 为 GBK，其它语言可能是 Big5/Shift_JIS）。这里按 UTF-8 → GBK → Big5 →
+// Shift_JIS 顺序探测，全部失败再退回 UTF-8 宽松解码；块尾被切断的多字节 UTF-8 序列
+// 会留到下一块拼接，避免误判成乱码。
+const UTF8_STRICT = new TextDecoder("utf-8", { fatal: true })
+const UTF8_LOOSE = new TextDecoder("utf-8")
+const LEGACY_STRICT = (["gbk", "big5", "shift_jis"] as const).map((label) => new TextDecoder(label, { fatal: true }))
+
+function incompleteUtf8(bytes: Uint8Array) {
+  if (bytes.length === 0 || bytes.length > 3) return false
+  const first = bytes[0]!
+  const need = first >= 0xc2 && first <= 0xdf ? 1 : first >= 0xe0 && first <= 0xef ? 2 : first >= 0xf0 && first <= 0xf4 ? 3 : 0
+  if (need === 0 || bytes.length > need) return false
+  for (let i = 1; i < bytes.length; i++) if ((bytes[i]! & 0xc0) !== 0x80) return false
+  return true
+}
+
+export function outputDecoder() {
+  let pending: Uint8Array | undefined
+  return {
+    decode(chunk: Uint8Array) {
+      let data = chunk
+      if (pending) {
+        const merged = new Uint8Array(pending.length + chunk.length)
+        merged.set(pending, 0)
+        merged.set(chunk, pending.length)
+        data = merged
+        pending = undefined
+      }
+      if (data.length === 0) return ""
+      try {
+        return UTF8_STRICT.decode(data)
+      } catch {}
+      for (let trim = 1; trim <= 3 && trim <= data.length; trim++) {
+        const tail = data.subarray(data.length - trim)
+        if (!incompleteUtf8(tail)) continue
+        try {
+          const text = UTF8_STRICT.decode(data.subarray(0, data.length - trim))
+          pending = new Uint8Array(tail)
+          return text
+        } catch {}
+      }
+      for (const decoder of LEGACY_STRICT) {
+        try {
+          return decoder.decode(data)
+        } catch {}
+      }
+      return UTF8_LOOSE.decode(data)
+    },
+    flush() {
+      const tail = pending
+      pending = undefined
+      return tail ? UTF8_LOOSE.decode(tail) : ""
+    },
+  }
+}
+
 function cmd(shell: string, command: string, cwd: string, env: NodeJS.ProcessEnv) {
   if (process.platform === "win32" && Shell.ps(shell)) {
     return ChildProcess.make(shell, [
@@ -493,8 +550,15 @@ export const ShellTool = Tool.define(
           yield* Effect.addFinalizer(closeSink)
           const handle = yield* spawner.spawn(cmd(input.shell, input.command, input.cwd, input.env))
 
+          const reader = outputDecoder()
+          const decoded = handle.all.pipe(
+            Stream.map((bytes: Uint8Array) => reader.decode(bytes)),
+            Stream.concat(Stream.suspend(() => Stream.make(reader.flush()))),
+            Stream.filter((text: string) => text.length > 0),
+          )
+
           yield* Effect.forkScoped(
-            Stream.runForEach(Stream.decodeText(handle.all), (chunk) => {
+            Stream.runForEach(decoded, (chunk) => {
               const size = Buffer.byteLength(chunk, "utf-8")
               list.push({ text: chunk, size })
               used += size

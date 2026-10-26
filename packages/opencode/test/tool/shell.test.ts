@@ -1,5 +1,5 @@
 import { PermissionV1 } from "@opencode-ai/core/v1/permission"
-import { describe, expect } from "bun:test"
+import { describe, expect, test } from "bun:test"
 import { LayerNode } from "@opencode-ai/core/effect/layer-node"
 import { Cause, Effect, Exit, Layer } from "effect"
 import type * as Scope from "effect/Scope"
@@ -7,7 +7,7 @@ import os from "os"
 import path from "path"
 import { Config } from "@/config/config"
 import { Shell } from "@opencode-ai/core/shell"
-import { ShellTool } from "../../src/tool/shell"
+import { ShellTool, outputDecoder } from "../../src/tool/shell"
 import { Filesystem } from "@/util/filesystem"
 import { provideInstance, testInstanceStoreLayer, tmpdirScoped } from "../fixture/fixture"
 import type { Permission } from "../../src/permission"
@@ -1198,4 +1198,27 @@ describe("tool.shell truncation", () => {
       }),
     ),
   )
+})
+
+describe("outputDecoder", () => {
+  const bytes = (...values: number[]) => new Uint8Array(values)
+
+  test("keeps utf-8 output unchanged", () => {
+    const reader = outputDecoder()
+    expect(reader.decode(new TextEncoder().encode("中文 ok"))).toBe("中文 ok")
+    expect(reader.flush()).toBe("")
+  })
+
+  test("falls back to gbk for legacy windows output", () => {
+    const reader = outputDecoder()
+    expect(reader.decode(bytes(0xd6, 0xd0, 0xce, 0xc4, 0xb2, 0xe2, 0xca, 0xd4))).toBe("中文测试")
+    expect(reader.flush()).toBe("")
+  })
+
+  test("waits for utf-8 sequences split across chunks", () => {
+    const reader = outputDecoder()
+    const data = new TextEncoder().encode("中文")
+    const text = reader.decode(data.subarray(0, 2)) + reader.decode(data.subarray(2))
+    expect(text).toBe("中文")
+  })
 })
