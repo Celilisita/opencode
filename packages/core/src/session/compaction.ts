@@ -13,46 +13,46 @@ const DEFAULT_BUFFER = 20_000
 const DEFAULT_KEEP_TOKENS = 8_000
 const TOOL_OUTPUT_MAX_CHARS = 2_000
 const SUMMARY_OUTPUT_TOKENS = 4_096
-const SUMMARY_TEMPLATE = `Output exactly the Markdown structure shown inside <template> and keep the section order unchanged. Do not include the <template> tags in your response.
+const SUMMARY_TEMPLATE = `严格按 <template> 中展示的 Markdown 结构输出，保持章节顺序不变。不要在回答中包含 <template> 标签。
 <template>
-## Objective
-- [one or two brief sentences describing what the user is trying to accomplish]
+## 目标
+- [用一两句简短的话描述用户想要完成什么]
 
-## Important Details
-- [constraints/preferences, decisions and why, important facts/assumptions, exact context needed to continue, or "(none)"]
+## 重要细节
+- [约束/偏好、做出的决定及理由、重要事实/假设、继续工作所需的准确上下文，或"（无）"]
 
-## Work State
-### Completed
-- [finished work, verified facts, or changes made; otherwise "(none)"]
+## 工作状态
+### 已完成
+- [已完成的工作、已验证的事实或做出的改动；否则"（无）"]
 
-### Active
-- [current work, partial changes, or investigation state; otherwise "(none)"]
+### 进行中
+- [当前工作、部分改动或调查状态；否则"（无）"]
 
-### Blocked
-- [blockers, failing commands, or unknowns; otherwise "(none)"]
+### 受阻
+- [阻塞点、失败的命令或未知项；否则"（无）"]
 
-## Next Move
-1. [immediate concrete action, or "(none)"]
-2. [next action if known, or "(none)"]
+## 下一步
+1. [立即执行的具体动作，或"（无）"]
+2. [若已知的后续动作，或"（无）"]
 
-## Relevant Files
-- [file or directory path: why it matters, or "(none)"]
+## 相关文件
+- [文件或目录路径：为什么重要，或"（无）"]
 </template>
 
-Rules:
-- Keep every section, even when empty.
-- Use terse bullets, not prose paragraphs.
-- Preserve exact file paths, symbols, commands, error strings, URLs, and identifiers when known.
-- Do not mention the summary process or that context was compacted.`
-const SUMMARY_UPDATE_INSTRUCTIONS = `The <prior-summary> summarizes everything that happened before the <conversation>. Construct a new summary that combines both. The <prior-summary> is discarded after this: anything you do not carry into the new summary is lost.
+规则：
+- 保留每个章节，即使为空。
+- 使用简洁的要点，不要写成散文段落。
+- 已知时精确保留文件路径、符号、命令、错误字符串、URL 和标识符。
+- 不要提及摘要过程，也不要提及上下文曾被压缩。`
+const SUMMARY_UPDATE_INSTRUCTIONS = `<prior-summary> 概括了 <conversation> 之前发生的全部内容。请构造一个把两者合并起来的新摘要。<prior-summary> 在此之后会被丢弃：任何没有带入新摘要的内容都会永久丢失。
 
-When combining:
-- Carry forward objectives, constraints, user directives, decisions, and parallel workstreams from the <prior-summary> even when the <conversation> does not mention them. Drop only what is finished and no longer needed.
-- The <conversation> is more recent than the <prior-summary>. Where they conflict, the conversation wins: state the corrected fact and drop the old claim.
-- Add new progress, decisions, constraints, and context from the conversation.
-- Move completed work from "Active" to "Completed".
-- If a blocker has been resolved, update the summary to reflect that while keeping any details still needed to continue the work.
-- Update "Objective" and "Next Move" to reflect the current work state.`
+合并时：
+- 即使 <conversation> 没有提及，也要从 <prior-summary> 中保留目标、约束、用户指令、决定和并行工作流。只丢弃已完成且不再需要的内容。
+- <conversation> 比 <prior-summary> 更新。两者冲突时以对话为准：写出更正后的事实并丢弃旧说法。
+- 补充对话中新的进展、决定、约束和上下文。
+- 把已完成的工作从"进行中"移到"已完成"。
+- 如果某个阻塞点已解决，更新摘要以反映这一点，同时保留继续工作仍然需要的细节。
+- 更新"目标"和"下一步"以反映当前的工作状态。`
 
 type Entry = {
   readonly seq: number
@@ -158,16 +158,16 @@ const select = (
 }
 
 export const buildPrompt = (input: { readonly previousSummary?: string; readonly context: readonly string[] }) => {
-  const conversation = `Here is the conversation so far:\n\n<conversation>\n${input.context.join("\n\n")}\n</conversation>`
+  const conversation = `以下是到目前为止的对话：\n\n<conversation>\n${input.context.join("\n\n")}\n</conversation>`
   if (!input.previousSummary)
     return [
       conversation,
-      "Create a new anchored summary from the conversation history in the <conversation> tags above so another coding agent can continue the work.",
+      "根据上方 <conversation> 标签中的对话历史，创建一个新的、带锚点的摘要，以便另一个编码 agent 能够继续这项工作。",
       SUMMARY_TEMPLATE,
     ].join("\n\n")
   return [
     conversation,
-    `Here is the summary of the conversation before the <conversation> above:\n\n<prior-summary>\n${input.previousSummary}\n</prior-summary>`,
+    `以下是上方 <conversation> 之前的对话摘要：\n\n<prior-summary>\n${input.previousSummary}\n</prior-summary>`,
     SUMMARY_UPDATE_INSTRUCTIONS,
     SUMMARY_TEMPLATE,
   ].join("\n\n")

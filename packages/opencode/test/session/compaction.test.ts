@@ -931,7 +931,7 @@ describe("session.compaction.process", () => {
         metadata: { compaction_continue: true },
       })
       if (last?.parts[0]?.type === "text") {
-        expect(last.parts[0].text).toContain("Continue if you have next steps")
+        expect(last.parts[0].text).toContain("如果有下一步就继续")
       }
     }),
   )
@@ -1128,7 +1128,7 @@ describe("session.compaction.process", () => {
           (msg) =>
             msg.info.role === "user" &&
             msg.parts.some(
-              (part) => part.type === "text" && part.synthetic && part.text.includes("Continue if you have next steps"),
+              (part) => part.type === "text" && part.synthetic && part.text.includes("如果有下一步就继续"),
             ),
         ),
       ).toBe(false)
@@ -1195,7 +1195,7 @@ describe("session.compaction.process", () => {
       expect(result).toBe("continue")
       expect(last?.info.role).toBe("user")
       if (last?.parts[0]?.type === "text") {
-        expect(last.parts[0].text).toContain("previous request exceeded the provider's size limit")
+        expect(last.parts[0].text).toContain("上一次请求因为附件过大超过了服务商的大小限制")
       }
     }),
   )
@@ -1404,10 +1404,10 @@ describe("session.compaction.process", () => {
         const captured = JSON.stringify(messages)
         expect(messages).toHaveLength(1)
         expect(messages[0]?.role).toBe("user")
-        expect(captured).toContain("Here is the conversation so far:")
+        expect(captured).toContain("以下是到目前为止的对话：")
         expect(captured).toContain("<conversation>")
         expect(captured.indexOf("[User]: older context")).toBeLessThan(
-          captured.indexOf("Create a new anchored summary"),
+          captured.indexOf("创建一个新的、带锚点的摘要"),
         )
         expect(captured).toContain("[User]: older context")
         expect(captured).not.toContain("keep this turn")
@@ -1459,9 +1459,9 @@ describe("session.compaction.process", () => {
         expect(captured).toContain("summary one")
         expect(captured.match(/summary one/g)?.length).toBe(1)
         expect(captured.indexOf("latest turn")).toBeLessThan(captured.indexOf("<prior-summary>"))
-        expect(captured).toContain("summary of the conversation before the <conversation> above")
-        expect(captured).toContain("## Important Details")
-        expect(captured).toContain("## Work State")
+        expect(captured).toContain("以下是上方 <conversation> 之前的对话摘要：")
+        expect(captured).toContain("## 重要细节")
+        expect(captured).toContain("## 工作状态")
       }).pipe(withCompaction({ llm: stub.llmLayer }))
     },
     { git: true },

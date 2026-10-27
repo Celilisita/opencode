@@ -436,7 +436,7 @@ const layer = Layer.effect(
                 type: "text",
                 text: [
                   nextPrompt,
-                  ...(compacting.prompt ? ["The following is the conversation history:", conversation] : []),
+                  ...(compacting.prompt ? ["以下是对话历史：", conversation] : []),
                 ]
                   .filter(Boolean)
                   .join("\n\n"),
@@ -526,9 +526,9 @@ const layer = Layer.effect(
             })
             const text =
               (input.overflow
-                ? "The previous request exceeded the provider's size limit due to large media attachments. The conversation was compacted and media files were removed from context. If the user was asking about attached images or files, explain that the attachments were too large to process and suggest they try again with smaller or fewer files.\n\n"
+                ? "上一次请求因为附件过大超过了服务商的大小限制。对话已被压缩，媒体文件已从上下文中移除。如果用户当时是在询问所附的图片或文件，请说明附件过大无法处理，并建议其用更小或更少的文件重试。\n\n"
                 : "") +
-              "Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed."
+              "如果有下一步就继续；若不确定如何推进，请停下并请求澄清。"
             yield* session.updatePart({
               id: PartID.ascending(),
               messageID: continueMsg.id,
